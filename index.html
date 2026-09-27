@@ -1,1 +1,1712 @@
 
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>하이퍼 제트 슈터 - 테마 & 보스 특화 패치</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020208;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 100vh;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0a1128 0%, #02040a 100%);
+            transition: background 1.5s ease;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* UI 레이어 */
+        #ui-bar {
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 13px;
+            z-index: 5;
+            pointer-events: none;
+            text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+        }
+
+        .player-hp-box {
+            font-size: 16px;
+            color: #ff3366;
+        }
+
+        .boss-hp-bar {
+            position: absolute;
+            top: 46px;
+            left: 10%;
+            width: 80%;
+            height: 14px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff0055;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            z-index: 5;
+        }
+
+        .boss-name {
+            position: absolute;
+            top: -18px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            color: #ff0055;
+            font-weight: bold;
+        }
+
+        .boss-hp-inner {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff0055, #ffaa00);
+            transition: width 0.1s linear;
+        }
+
+        #upgrade-container {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 8;
+            width: 92%;
+            max-width: 450px;
+        }
+
+        .up-btn {
+            flex: 1;
+            padding: 10px 4px;
+            background: rgba(10, 15, 30, 0.88);
+            border: 1.5px solid #00ffff;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .up-btn.disabled {
+            border-color: #444;
+            color: #666;
+            opacity: 0.5;
+        }
+
+        .up-cost {
+            color: #ffdd00;
+            font-size: 11px;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 3, 18, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            z-index: 10;
+        }
+
+        .title {
+            font-size: 30px;
+            font-weight: 900;
+            color: #00ffff;
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .chest-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed #ff00ff;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 15px 0;
+            text-align: center;
+            width: 85%;
+            max-width: 360px;
+        }
+
+        .chest-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(135deg, #ff007f, #7928ca);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .skin-info {
+            font-size: 13px;
+            color: #ffdd00;
+            margin-top: 6px;
+            font-weight: bold;
+        }
+
+        .difficulty-picker {
+            margin: 8px 0 20px;
+            text-align: center;
+            font-size: 15px;
+        }
+
+        #difficulty-select {
+            margin-left: 8px;
+            padding: 10px;
+            border: 1px solid #00ffff;
+            border-radius: 8px;
+            background: #101a30;
+            color: #fff;
+            font: inherit;
+            touch-action: auto;
+        }
+
+        #start-screen { overflow-y:auto; justify-content:flex-start; padding:28px 16px; touch-action:pan-y; }
+        #start-screen > * { flex-shrink:0; }
+        #start-screen, #start-screen * { touch-action:pan-y; }
+        .lobby-panel { width:100%; max-width:440px; margin:14px 0 4px; padding:14px; border:1px solid #294361; border-radius:12px; background:#0c182b; }
+        .lobby-panel h2 { font-size:16px; color:#b9f7ff; margin-bottom:10px; }
+        #nickname-input { min-width:0; flex:1; padding:10px; border:1px solid #496880; border-radius:8px; background:#050e1c; color:white; font-size:16px; user-select:text; -webkit-user-select:text; }
+        #nickname-save { border:0; border-radius:8px; padding:10px 14px; background:#19677d; color:white; cursor:pointer; }
+        .rank-row { display:grid; grid-template-columns:30px minmax(0,1fr) 65px; align-items:center; gap:8px; padding:9px 0; border-top:1px solid #223149; font-size:13px; }
+        .rank-row strong { overflow-wrap:anywhere; }
+        .rank-row small { display:block; color:#91a8c1; margin-top:4px; font-size:11px; }
+        .rank-row .rank-score { text-align:right; color:#ffda69; }
+        #jet-shop { width:100%; max-width:440px; display:grid; gap:8px; margin:12px 0; }
+        .jet-card { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid #294361; border-radius:12px; background:linear-gradient(120deg,#12263d,#080e20); }
+        .jet-card.equipped { border-color:#56f5ed; box-shadow:inset 0 0 18px #00ffff15; }
+        .jet-card button { padding:9px 12px; border:0; border-radius:8px; background:#1b657e; color:white; cursor:pointer; white-space:nowrap; }
+        .jet-card button:disabled { opacity:.45; cursor:default; }
+        .jet-card small { display:block; color:#adc4d8; margin-top:5px; line-height:1.5; }
+        .jet-icon { font-size:30px; filter:drop-shadow(0 0 7px currentColor); }
+        .btn {
+            padding: 14px 44px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" tabindex="0" aria-label="게임 화면: 방향키로 이동, ㅇ키로 진화" style="outline:none"></canvas>
+        <div id="control-hint" style="position:absolute;bottom:68px;left:0;width:100%;text-align:center;color:#a9dbea;font-size:12px;pointer-events:none;">↑ ↓ ← → 이동 · 동전을 모아 ㅇ키로 진화</div>
+
+        <div id="ui-bar">
+            <div id="hp-display" class="player-hp-box">❤️❤️❤️</div>
+            <div id="score-display">SCORE: 0</div>
+            <div id="theme-name" style="color: #00ffff;">THEME 1</div>
+            <div>🪐 <span id="coin-count" style="color:#ffdd00;">0</span></div>
+        </div>
+
+        <div class="boss-hp-bar" id="boss-hp-bar">
+            <div class="boss-name" id="boss-name-text">BOSS</div>
+            <div class="boss-hp-inner" id="boss-hp-inner"></div>
+        </div>
+
+        <div id="boss-pattern" role="status" style="display:none;position:absolute;top:108px;left:5%;width:90%;z-index:6;text-align:center;color:#fff0bd;font-size:12px;pointer-events:none"></div>
+        <button id="lobby-btn" style="position:absolute;right:12px;top:75px;z-index:8;padding:8px 12px;border:1px solid #496880;border-radius:8px;background:#0c1830;color:white;cursor:pointer;display:none">⌂ 로비로 돌아가기</button>
+        <div id="upgrade-container">
+            <div class="up-btn disabled" id="up-rate-btn">
+                <span>⚡ 탄속·연사 [ㅁ / A]</span>
+                <span class="up-cost" id="rate-cost">🪐 5</span>
+            </div>
+            <div class="up-btn disabled" id="up-power-btn">
+                <span>🚀 기체 진화 [ㅇ / D]</span>
+                <span class="up-cost" id="power-cost">🪐 10</span>
+            </div>
+        </div>
+
+        <!-- 시작 화면 -->
+        <div id="start-screen" class="overlay">
+            <div class="title">REAL JET SHOOTER</div>
+            <p style="font-size: 13px; color: #8a8ab0; margin-bottom: 5px;">12개 전장 · 최종 보스: 머나먼 세상 · 테마별 적 편대</p>
+
+            <div class="difficulty-picker" style="margin-top:16px">
+                <label for="world-select">월드 선택</label>
+                <select id="world-select" style="padding:10px;border:1px solid #d9ac62;border-radius:8px;background:#101a30;color:white;font-size:15px">
+                    <option value="1">월드 1 · 기본 모험</option>
+                    <option value="2">월드 2 · 적 피해 ×2 / 코인 ×2</option>
+                </select>
+            </div>
+            <p id="world-description" style="font-size:12px;color:#e7c788;text-align:center;margin-bottom:12px">월드 1 · 잡몹 처치당 1코인</p>
+            <div class="difficulty-picker">
+                <label for="difficulty-select">난이도</label>
+                <select id="difficulty-select">
+                    <option value="easy">쉬움 · 하트 5개</option>
+                    <option value="normal" selected>보통 · 하트 3개</option>
+                    <option value="hard">어려움 · 하트 1개</option>
+                </select>
+            </div>
+            <p style="font-size:13px;color:#a5c8e8;margin:0 15px 18px;text-align:center;line-height:1.8">↑ ↓ ← → 방향키로 이동 · 자동 사격 · 잡몹 처치 시 코인 자동 획득<br>ㅁ(A): 코인으로 탄속·연사 강화 · ㅇ(D): 기체 진화</p>
+            <section class="lobby-panel" aria-labelledby="stage-title">
+                <h2 id="stage-title">🗺 스테이지 선택</h2>
+                <p style="font-size:12px;color:#a9bfd5;line-height:1.7;margin-bottom:12px">모든 스테이지가 열려 있어요. 원하는 테마로 바로 출격하세요!<br>일반 적 10대 처치 → 보스 격파 → 스테이지 클리어</p>
+                <div id="stage-list" style="display:grid;gap:8px"></div>
+            </section>
+            <section class="lobby-panel" aria-labelledby="nickname-title">
+                <h2 id="nickname-title"><label for="nickname-input">조종사 닉네임</label></h2>
+                <div style="display:flex;gap:8px"><input id="nickname-input" maxlength="12" placeholder="닉네임 입력 (최대 12자)" autocomplete="off"><button id="nickname-save">저장</button></div>
+                <p id="nickname-status" role="status" style="font-size:12px;color:#9ecfdf;margin-top:8px"></p>
+            </section>
+            <section class="lobby-panel" aria-labelledby="ranking-title">
+                <h2 id="ranking-title">🌐 온라인 랭킹 · TOP 10</h2>
+                <p style="color:#91a8c1;font-size:11px;margin-bottom:8px">닉네임과 기록이 다른 플레이어에게 공개돼요 · 월드별 순위</p>
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                    <select id="ranking-world" aria-label="랭킹 월드" style="padding:8px;background:#142138;color:white;border:1px solid #466780;border-radius:8px"><option value="1">월드 1 랭킹</option><option value="2">월드 2 랭킹</option></select>
+                    <button id="ranking-refresh" style="padding:8px;background:#19677d;color:white;border:0;border-radius:8px;cursor:pointer">새로고침</button>
+                </div>
+                <p id="ranking-status" role="status" style="font-size:12px;color:#adc4d8;margin-bottom:8px">온라인 랭킹 연결 중…</p>
+                <div id="ranking-list"></div>
+            </section>
+            <h2 style="font-size:18px;margin-top:18px;color:#b9f7ff">JET HANGAR · 제트기 상점</h2>
+            <p id="hangar-coins" style="color:#ffda69;margin-top:8px"></p>
+            <section class="lobby-panel" style="border-color:#8963c5;background:linear-gradient(135deg,#241536,#111b30);text-align:center" aria-labelledby="chest-title">
+                <h2 id="chest-title">🎁 제트기 보물상자</h2>
+                <p style="font-size:13px;color:#e5d7ff;line-height:1.7">10코인으로 무작위 제트기 1대!<br>새 기체는 보관함에 추가되고, 상점에서 장착할 수 있어요.</p>
+                <button class="chest-btn" id="treasure-open">보물상자 열기 · 🪐 10</button>
+                <p id="treasure-status" role="status" aria-live="polite" style="margin-top:12px;color:#ffda69;font-size:14px;line-height:1.6"></p>
+                <p style="margin-top:10px;font-size:12px;color:#b5a8c9;line-height:1.8">팔콘 49% · 스위프트 28% · 타이탄 15% · 팬텀 7% · S ECLIPSE 1%<br>중복 기체가 나오면 5코인 반환</p>
+            </section>
+            <div id="jet-shop"></div>
+            <section class="lobby-panel" style="border-color:#aa8652" aria-labelledby="parts-title">
+                <h2 id="parts-title">🧩 부품 공방 · 부품 상자</h2>
+                <p style="font-size:13px;color:#c6d8e7;line-height:1.7">12코인으로 부품 1개 획득 · 서로 다른 부품 2개까지 조합<br>모든 제트기에 장착 가능 · 중복 획득 시 4코인 반환</p>
+                <button class="chest-btn" id="parts-open">부품 상자 열기 · 🪐 12</button>
+                <p id="parts-result" role="status" aria-live="polite" style="font-size:13px;color:#ffda69;line-height:1.7;margin:10px 0"></p>
+                <p style="font-size:11px;color:#a9bfd5;line-height:1.7">C 45% · B 28% · A 17% · S 8% · SS 2%<br>획득한 부품은 저장되며 출격마다 효과가 다시 준비됩니다.</p>
+                <p id="parts-slots" style="font-size:13px;color:#d4efff;margin:12px 0"></p>
+                <div id="parts-inventory" style="display:grid;gap:8px"></div>
+                <canvas id="parts-preview" width="280" height="160" style="width:100%;height:160px;margin-top:12px;border-radius:12px;background:#071021" aria-label="장착 부품과 제트기 미리보기"></canvas>
+            </section>
+            <p style="font-size:12px;color:#9fb6cf;margin-bottom:12px">구매한 기체는 영구 보유 · 출격 전 자유롭게 장착</p>
+            <details class="lobby-panel" style="margin-top:18px;color:#adc4d8;font-size:13px;line-height:1.9">
+                <summary style="cursor:pointer;color:#b9f7ff">새로운 전장과 적 도감</summary>
+                <p>❄ 얼음 지대 · 아이스 스케이터 / 프로스트 크라운<br>지그재그 편대와 넓게 퍼지는 얼음 탄막</p>
+                <p>🌋 화산 · 잿불 폭격기 / 마그마 타이탄<br>무거운 폭격기와 틈새를 찾아 피하는 화염 장벽</p>
+                <p>🌌 우주 · 궤도 추격기 / 네뷸라 리퍼<br>휘어지는 궤도와 두 줄 회전 나선탄</p>
+                <p>⚡ 폭풍 · 번개 인터셉터 / 템페스트 드래곤<br>빠른 접근과 조준 사격, 양 날개의 교차 탄막</p>
+                <p>🦖 쥐라기 · 익룡 정찰기 / 티라노 메카 렉스<br>빠른 활공과 양쪽 턱에서 쏘는 부채꼴 탄막</p>
+                <p>⚛ 과학 기지 · 실험 드론 / 퀀텀 코어 AI<br>조준탄과 빈틈이 있는 방사형 에너지탄</p>
+                <p>🐙 심해 · 가오리 잠수기 / 심해 크라켄<br>물결 이동과 흔들리는 수압 탄막</p>
+                <p>☥ 고대 유적 · 석상 비행병 / 태양신의 수호자<br>묵직한 비행과 태양 모양 원형 탄막</p>
+                <p>♛ 머나먼 세상 · 역대 적 연합 / 아스트라 · 세계의 끝<br>최종 보스가 역대 11개 공격 패턴을 5초마다 사용합니다. 체력 1,800 · 공격 피해 3 · 플레이어 근처 별 폭탄은 3초 뒤 폭발!</p>
+                <p>각 스테이지에서 1,000점을 모으면 보스가 등장해요. 보스를 격파하면 클리어! 로비에서 원하는 전장을 다시 선택하세요.</p>
+            </details>
+        </div>
+
+        <!-- 게임오버 화면 -->
+        <div id="gameover-screen" class="overlay" style="display: none;">
+            <div class="title" id="result-title" style="color: #ff3366;">MISSION FAILED</div>
+            <div style="font-size: 20px; margin-bottom: 25px;" id="final-score">SCORE: 0</div>
+            <p id="ranking-result" style="color:#ffda69;margin-bottom:18px;text-align:center;padding:0 16px"></p>
+            <button class="btn" id="restart-btn"
+                style="background: linear-gradient(135deg, #ff007f, #7928ca);">재출격</button>
+            <button class="btn" id="hangar-btn" style="margin-top:16px;background:linear-gradient(135deg,#237885,#174355);font-size:18px;padding:14px 30px">⌂ 로비로 돌아가기</button>
+            <p style="margin-top:12px;color:#adc4d8;font-size:13px">모은 코인으로 제트기를 구매·장착할 수 있어요</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const scoreDisplay = document.getElementById('score-display');
+        const themeNameDisplay = document.getElementById('theme-name');
+        const coinCountDisplay = document.getElementById('coin-count');
+        const hpDisplay = document.getElementById('hp-display');
+        const bossHpBar = document.getElementById('boss-hp-bar');
+        const bossHpInner = document.getElementById('boss-hp-inner');
+        const bossNameText = document.getElementById('boss-name-text');
+
+        const upRateBtn = document.getElementById('up-rate-btn');
+        const upPowerBtn = document.getElementById('up-power-btn');
+        const rateCostText = document.getElementById('rate-cost');
+        const powerCostText = document.getElementById('power-cost');
+
+
+
+        let width, height;
+        let gameActive = false;
+        let score = 0;
+        let coins = 0;
+        let frame = 0;
+
+        const difficultySelect = document.getElementById('difficulty-select');
+        const difficultyHearts = { easy: 5, normal: 3, hard: 1 };
+        const BOSS_SCORE_INTERVAL = 1000;
+        let nextBossScore = BOSS_SCORE_INTERVAL;
+        let playerHp = 3;
+        let invulnerableFrames = 0;
+
+        let currentSkin = 0;
+        let animationId = null;
+        let lastFrameTime = null;
+        const jets = [
+            {name:'팔콘', icon:'✦', price:0, color:'#51eaff', speed:6, damage:1, hp:0, skin:0, detail:'기본형 · 균형 잡힌 에너지탄'},
+            {name:'스위프트', icon:'➤', price:15, color:'#67ff9a', speed:8.4, damage:1, hp:0, skin:1, detail:'기동형 · 이동 속도 +40% · 초록 레이저'},
+            {name:'타이탄', icon:'⬟', price:20, color:'#ffc568', speed:5.1, damage:1, hp:2, skin:2, detail:'장갑형 · 하트 +2 · 이동 속도 −15%'},
+            {name:'팬텀', icon:'❖', price:25, color:'#f58aff', speed:6, damage:2, hp:0, skin:3, detail:'화력형 · 보스 피해 2배 · 플라스마탄'},
+            {name:'S · ECLIPSE', icon:'✺', price:Infinity, chestOnly:true, color:'#bda0ff', speed:6.6, damage:1, hp:0, skin:4, detail:'S등급 · 상자 전용 1% · 5초마다 무작위 블랙홀 자동 설치 · 3초 유지 · 개수 제한 없음'}
+        ];
+        let ownedJets = [0];
+        let selectedJet = 0;
+        try {
+            const saved = JSON.parse(localStorage.getItem('jet-hangar-v1') || 'null');
+            if (saved) {
+                coins = Number.isSafeInteger(saved.coins) && saved.coins >= 0 ? saved.coins : 0;
+                ownedJets = [0, ...new Set((Array.isArray(saved.owned) ? saved.owned : []).filter(i => Number.isInteger(i) && i > 0 && i < jets.length))];
+                selectedJet = ownedJets.includes(saved.selected) ? saved.selected : 0;
+                currentSkin = jets[selectedJet].skin;
+            }
+        } catch (_) {}
+        const nicknameInput = document.getElementById('nickname-input');
+        const nicknameStatus = document.getElementById('nickname-status');
+        let nickname = '파일럿';
+        let rankings = [];
+        let runProfile = null;
+        let runRecorded = false;
+        function cleanNickname(value) {
+            return String(value || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 12) || '파일럿';
+        }
+        try {
+            nickname = cleanNickname(localStorage.getItem('jet-nickname-v1'));
+            localStorage.removeItem('jet-rankings-v1');
+
+        } catch (_) {}
+        nicknameInput.value = nickname;
+        function saveNickname() {
+            nickname = cleanNickname(nicknameInput.value);
+            nicknameInput.value = nickname;
+            try {
+                localStorage.setItem('jet-nickname-v1', nickname);
+                nicknameStatus.textContent = nickname + ' · 저장했어요!';
+            } catch (_) { nicknameStatus.textContent = nickname + ' · 이번 접속에서 사용해요'; }
+        }
+        document.getElementById('nickname-save').addEventListener('click', saveNickname);
+        nicknameInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); saveNickname(); }
+        });
+        nicknameStatus.textContent = '출격할 때도 자동으로 저장돼요.';
+        function renderRankings() {
+            const list = document.getElementById('ranking-list');
+            list.replaceChildren();
+            if (!rankings.length) {
+                const empty = document.createElement('p');
+                empty.textContent = rankingLoaded ? '아직 등록된 온라인 기록이 없어요. 첫 기록에 도전하세요!' : '연결되면 모두의 기록을 볼 수 있어요.';
+                empty.style.cssText = 'font-size:13px;color:#9fb6cf;padding:10px 0';
+                list.appendChild(empty); return;
+            }
+            rankings.forEach((record, i) => {
+                const row = document.createElement('div'); row.className = 'rank-row';
+                const place = document.createElement('span'); place.textContent = ['🥇','🥈','🥉'][i] || String(i+1);
+                const info = document.createElement('div');
+                const name = document.createElement('strong'); name.textContent = record.name;
+                const detail = document.createElement('small');
+                detail.textContent = 'W' + record.world + ' · ' + {easy:'쉬움',normal:'보통',hard:'어려움'}[record.difficulty] + ' · ' + jets[record.jet].name + (Number.isInteger(record.stage) && stageNames[record.stage] ? ' · ' + stageNames[record.stage] + (record.cleared ? ' ✓' : '') : '');
+                info.appendChild(name); info.appendChild(detail);
+                const points = document.createElement('strong'); points.className = 'rank-score'; points.textContent = record.score.toLocaleString() + '점';
+                row.appendChild(place); row.appendChild(info); row.appendChild(points); list.appendChild(row);
+            });
+        }
+        let rankingLoaded = false, rankingRequest = 0;
+        let onlineRunPromise = Promise.resolve(null);
+        let pendingOnlineResult = null;
+        let currentRunVersion = 0;
+        let onlinePlayerId;
+        try {
+            onlinePlayerId = localStorage.getItem('jet-online-player');
+            if (!onlinePlayerId) {onlinePlayerId=crypto.randomUUID();localStorage.setItem('jet-online-player',onlinePlayerId);}
+        } catch (_) {onlinePlayerId=crypto.randomUUID();}
+        async function onlineRequest(path, body) {
+            const response = await fetch(path, {method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(8000)});
+            if(!response.ok) throw new Error('연결 실패');
+            return response.json();
+        }
+        async function refreshRankings() {
+            const requestId=++rankingRequest;
+            const status=document.getElementById('ranking-status');
+            status.textContent='온라인 순위를 불러오는 중…';
+            try {
+                const result=await onlineRequest('/api/rankings?world='+document.getElementById('ranking-world').value);
+                if(requestId!==rankingRequest)return;
+                if(!Array.isArray(result.records))throw new Error('잘못된 응답');
+                rankings=result.records.filter(r=>r && typeof r.name==='string' && Number.isInteger(r.score) && jets[r.jet] && ['easy','normal','hard'].includes(r.difficulty) && [1,2].includes(r.world)).slice(0,10);
+                rankingLoaded=true;status.textContent='온라인 연결됨 · 모두가 같은 기록을 봐요';
+            } catch (_) {
+                if(requestId!==rankingRequest)return;
+                rankingLoaded=false;rankings=[];
+                status.textContent='온라인 랭킹에 연결하지 못했어요. 게임은 계속할 수 있어요.';
+            }
+            renderRankings();
+        }
+        document.getElementById('ranking-refresh').addEventListener('click',refreshRankings);
+        document.getElementById('ranking-world').addEventListener('change',refreshRankings);
+        async function beginOnlineRun(profile) {
+            try {return await onlineRequest('/api/runs',{...profile,playerId:onlinePlayerId});}
+            catch (_) {return null;}
+        }
+        async function submitOnlineResult(pending) {
+            const label=document.getElementById('ranking-result');
+            if(pending.version===currentRunVersion)label.textContent='온라인 랭킹에 기록을 보내는 중…';
+            try {
+                const session=await pending.session;
+                if(!session || !session.token)throw new Error('연결 실패');
+                await onlineRequest('/api/rankings',{token:session.token,score:pending.score,cleared:pending.cleared});
+                if(pendingOnlineResult===pending)pendingOnlineResult=null;
+                if(pending.version===currentRunVersion)label.textContent='온라인 랭킹에 기록을 등록했어요!';
+                refreshRankings();
+            } catch (_) {
+                if(pending.version===currentRunVersion)label.textContent='온라인 등록에 실패했어요. 연결을 확인하고 다시 도전해 주세요.';
+            }
+        }
+        function recordRun() {
+            if (runRecorded || !runProfile) return;
+            runRecorded=true;
+            pendingOnlineResult={session:onlineRunPromise,score,cleared:!!runProfile.cleared,version:currentRunVersion};
+            submitOnlineResult(pendingOnlineResult);
+        }
+        const parts = [
+            {id:'cooler', name:'C · 냉각 엔진', icon:'▰', color:'#90c6dc', weight:45, detail:'후방 보조 엔진 · 주포 발사 간격 1프레임 단축'},
+            {id:'cannon', name:'B · 트윈 캐논', icon:'⋈', color:'#67eaaa', weight:28, detail:'양 날개 포대 · 0.5초마다 추가 탄환 2발'},
+            {id:'shield', name:'A · 오로라 실드', icon:'⬡', color:'#7bb7ff', weight:17, detail:'푸른 장갑판과 보호막 · 출격당 피격 2회 방어'},
+            {id:'pulse', name:'S · 썬더 코어', icon:'ϟ', color:'#ffd569', weight:8, detail:'황금 코어 · 4초마다 주변 110px 적 탄환 제거'},
+            {id:'wings', name:'SS · 세라핌 윙', icon:'✧', color:'#f5b8ff', weight:2, detail:'빛의 6중 날개 · 1초마다 강화 탄환 4발 추가'}
+        ];
+        let ownedParts = [], equippedParts = [], activeParts = [];
+        let shieldCharges = 0, pulseFlash = 0;
+        const partSprites = new Map();
+        try {
+            const saved = JSON.parse(localStorage.getItem('jet-hangar-v1') || 'null');
+            if (saved) {
+                ownedParts = [...new Set((Array.isArray(saved.ownedParts) ? saved.ownedParts : []).filter(id => parts.some(p => p.id === id)))];
+                equippedParts = [...new Set((Array.isArray(saved.equippedParts) ? saved.equippedParts : []).filter(id => ownedParts.includes(id)))].slice(0,2);
+            }
+        } catch (_) {}
+        function hasPart(id) { return activeParts.includes(id); }
+        function openPartsChest() {
+            if (gameActive || coins < 12) return;
+            let roll = Math.random()*100, part = parts[parts.length-1];
+            for (const candidate of parts) {
+                if (roll < candidate.weight) {part=candidate;break;}
+                roll -= candidate.weight;
+            }
+            coins -= 12;
+            const duplicate=ownedParts.includes(part.id);
+            if (duplicate) coins+=4; else ownedParts.push(part.id);
+            saveHangar(); renderShop(); updateUpgradeUI();
+            const result=document.getElementById('parts-result');
+            result.textContent=part.name + (duplicate ? ' 중복! 4코인을 돌려받았어요.' : ' 획득! 아래에서 장착해 보세요.');
+            result.style.color=part.color;
+        }
+        function togglePart(id) {
+            if (gameActive || !ownedParts.includes(id)) return;
+            if (equippedParts.includes(id)) equippedParts=equippedParts.filter(p=>p!==id);
+            else if (equippedParts.length<2) equippedParts.push(id);
+            else return;
+            saveHangar(); renderParts();
+        }
+        function renderParts() {
+            const button=document.getElementById('parts-open');
+            button.disabled=coins<12;button.style.opacity=coins<12?'.5':'1';
+            button.textContent=coins<12 ? `부품 상자 · ${12-coins}코인 더 필요해요` : '부품 상자 열기 · 🪐 12';
+            document.getElementById('parts-slots').textContent=`장착 ${equippedParts.length}/2 · 교체하려면 장착한 부품을 먼저 해제하세요`;
+            document.getElementById('parts-inventory').innerHTML=parts.map(p=>{
+                const owned=ownedParts.includes(p.id), equipped=equippedParts.includes(p.id);
+                return `<div class="jet-card ${equipped?'equipped':''}"><span class="jet-icon" style="color:${p.color}">${p.icon}</span><div style="flex:1"><strong style="color:${p.color}">${p.name}</strong><small>${p.detail}</small></div><button data-part="${p.id}" ${!owned || (!equipped && equippedParts.length>=2)?'disabled':''}>${equipped?'해제':owned?'장착':'미보유'}</button></div>`;
+            }).join('');
+            drawPartsPreview();
+        }
+        document.getElementById('parts-open').addEventListener('click',openPartsChest);
+        document.getElementById('parts-inventory').addEventListener('click',e=>{
+            const button=e.target.closest('button[data-part]');if(button)togglePart(button.dataset.part);
+        });
+        function drawPartsPreview() {
+            const preview=document.getElementById('parts-preview'), main=ctx;
+            try {
+                ctx=preview.getContext('2d');ctx.clearRect(0,0,280,160);
+                drawCraft(140,72,25,1,skins[jets[selectedJet].skin].highlight,false);
+                drawParts(140,72,equippedParts,equippedParts.includes('shield')?2:0);
+                ctx.fillStyle='#b7cfe3';ctx.font='12px sans-serif';ctx.textAlign='center';
+                ctx.fillText(equippedParts.length?'장착 외형 미리보기':'부품을 장착하면 여기에 표시돼요',140,147);
+            } finally {ctx=main;}
+        }
+        function drawParts(x,y,loadout,charges) {
+            for(const id of loadout) {
+                if(!partSprites.has(id)) partSprites.set(id,makeSprite(180,160,90,80,()=>{
+                    const part=parts.find(p=>p.id===id);ctx.strokeStyle=part.color;ctx.fillStyle='#15263e';ctx.lineWidth=2;
+                    const panel=points=>{ctx.beginPath();points.forEach(([px,py],i)=>i?ctx.lineTo(px,py):ctx.moveTo(px,py));ctx.closePath();ctx.fill();ctx.stroke();};
+                    if(id==='cooler') for(const side of [-1,1]) {
+                        ctx.fillRect(side*13-4,15,8,20);ctx.strokeRect(side*13-4,15,8,20);
+                        ctx.fillStyle=part.color;ctx.fillRect(side*13-2,35,4,10);
+                    }
+                    if(id==='cannon') for(const side of [-1,1]) {
+                        panel([[side*24,-5],[side*39,-10],[side*41,15],[side*24,20]]);
+                        ctx.fillStyle=part.color;ctx.fillRect(side*34-2,-24,4,23);
+                    }
+                    if(id==='shield') for(const side of [-1,1]) panel([[side*20,-22],[side*31,-13],[side*30,23],[side*20,17]]);
+                    if(id==='pulse') {
+                        ctx.fillStyle='#463315';panel([[-12,10],[0,2],[12,10],[9,29],[-9,29]]);
+                        ctx.fillStyle=part.color;ctx.beginPath();ctx.arc(0,16,5,0,Math.PI*2);ctx.fill();
+                        for(const side of [-1,1])panel([[side*25,3],[side*49,-12],[side*41,12],[side*25,19]]);
+                    }
+                    if(id==='wings') for(const side of [-1,1]) for(let i=0;i<3;i++) {
+                        ctx.fillStyle=['#552b73','#9055a8','#e3bbff'][i];
+                        panel([[side*20,5+i*7],[side*(67-i*9),-36+i*19],[side*(52-i*6),8+i*14],[side*20,20+i*3]]);
+                    }
+                }));
+                ctx.drawImage(partSprites.get(id),x-90,y-80);
+            }
+            if(charges>0) {
+                ctx.save();ctx.strokeStyle='#8ccdff';ctx.globalAlpha=.5;ctx.lineWidth=2;
+                ctx.beginPath();ctx.arc(x,y,43,0,Math.PI*2);ctx.stroke();ctx.restore();
+            }
+        }
+        function updatePartEffects() {
+            if(hasPart('cannon') && frame%30===0) for(const side of [-1,1]) bullets.push({x:player.x+side*34,y:player.y-24,speed:18,damage:1});
+            if(hasPart('wings') && frame%60===0) for(const offset of [-52,-38,38,52]) bullets.push({x:player.x+offset,y:player.y-12,speed:20,damage:2});
+            if(hasPart('pulse') && frame%240===0) {
+                pulseFlash=20;
+                enemyBullets=enemyBullets.filter(b=>Math.hypot(b.x-player.x,b.y-player.y)>110);
+            }
+            if(pulseFlash>0) {
+                ctx.save();ctx.strokeStyle='#ffdf79';ctx.globalAlpha=pulseFlash/20;ctx.lineWidth=3;
+                ctx.beginPath();ctx.arc(player.x,player.y,110*(1-pulseFlash/25),0,Math.PI*2);ctx.stroke();ctx.restore();pulseFlash--;
+            }
+        }
+        function saveHangar() {
+            try { localStorage.setItem('jet-hangar-v1', JSON.stringify({coins, owned:ownedJets, selected:selectedJet, ownedParts, equippedParts})); } catch (_) {}
+        }
+        const treasureCost = 10;
+        const treasureDrops = [{jet:0, weight:49}, {jet:1, weight:28}, {jet:2, weight:15}, {jet:3, weight:7}, {jet:4, weight:1}];
+        function openTreasure() {
+            if (gameActive) return;
+            const status = document.getElementById('treasure-status');
+            if (coins < treasureCost) {
+                status.textContent = `코인이 부족해요. ${treasureCost - coins}코인을 더 모아 주세요!`;
+                return;
+            }
+            let roll = Math.random() * 100;
+            let index = treasureDrops[treasureDrops.length - 1].jet;
+            for (const drop of treasureDrops) {
+                if (roll < drop.weight) { index = drop.jet; break; }
+                roll -= drop.weight;
+            }
+            coins -= treasureCost;
+            const duplicate = ownedJets.includes(index);
+            if (duplicate) coins += 5;
+            else ownedJets.push(index);
+            saveHangar(); renderShop(); updateUpgradeUI();
+            status.textContent = duplicate
+                ? `${jets[index].icon} ${jets[index].name}! 이미 가진 기체라 5코인을 돌려받았어요.`
+                : `${jets[index].icon} ${jets[index].name} 획득! 아래 상점에서 장착해 보세요.`;
+            status.style.color = jets[index].color;
+        }
+        document.getElementById('treasure-open').addEventListener('click', openTreasure);
+        function renderShop() {
+            renderParts();
+            document.getElementById('hangar-coins').innerText = '보유 코인 🪐 ' + coins;
+            const chestButton = document.getElementById('treasure-open');
+            chestButton.disabled = coins < treasureCost;
+            chestButton.style.opacity = coins < treasureCost ? '.5' : '1';
+            chestButton.style.cursor = coins < treasureCost ? 'not-allowed' : 'pointer';
+            chestButton.textContent = coins < treasureCost
+                ? `🪐 ${treasureCost - coins}코인 더 필요해요 · 가격 10`
+                : '보물상자 열기 · 🪐 10';
+            document.getElementById('jet-shop').innerHTML = jets.map((jet, i) => {
+                const owned = ownedJets.includes(i), equipped = selectedJet === i;
+                return `<div class="jet-card ${equipped ? 'equipped' : ''}"><span class="jet-icon" style="color:${jet.color}">${jet.icon}</span><div style="flex:1"><strong>${jet.name}</strong><small>${jet.detail}</small></div><button data-jet="${i}" ${equipped || (!owned && coins < jet.price) ? 'disabled' : ''}>${equipped ? '장착 중' : owned ? '장착' : jet.chestOnly ? '상자 전용 · 1%' : '🪐 ' + jet.price + ' 구매'}</button></div>`;
+            }).join('');
+        }
+        function buyOrEquipJet(index) {
+            if (gameActive || !jets[index]) return;
+            if (!ownedJets.includes(index)) {
+                if (jets[index].chestOnly || coins < jets[index].price) return;
+                coins -= jets[index].price; ownedJets.push(index);
+            }
+            selectedJet = index; currentSkin = jets[index].skin;
+            saveHangar(); renderShop(); updateUpgradeUI();
+        }
+        document.getElementById('jet-shop').addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-jet]');
+            if (button) buyOrEquipJet(Number(button.dataset.jet));
+        });
+        function openLobby() {
+            gameActive = false; cancelAnimationFrame(animationId); heldKeys.clear();
+            gameoverScreen.style.display = 'none'; startScreen.style.display = 'flex';
+            document.getElementById('lobby-btn').style.display = 'none';
+            bossHpBar.style.display = 'none';
+            document.getElementById('boss-pattern').style.display = 'none'; saveHangar(); renderShop(); refreshRankings();
+        }
+        document.getElementById('lobby-btn').addEventListener('click', openLobby);
+        document.getElementById('hangar-btn').addEventListener('click', openLobby);
+        const skins = [
+            { name: 'F-22 스텔스', body: '#3a4454', wing: '#232a36', highlight: '#00ffff' },
+            { name: 'SU-57 바이퍼', body: '#3c5040', wing: '#223325', highlight: '#33ff66' },
+            { name: 'F-15 썬더볼트', body: '#504838', wing: '#332d20', highlight: '#ffbb00' },
+            { name: 'YF-23 고스트', body: '#4a3b52', wing: '#2d2233', highlight: '#ff00ee' },
+            { name: 'S ECLIPSE', body: '#281c48', wing: '#443273', highlight: '#bda0ff' }
+        ];
+
+        const worldSelect = document.getElementById('world-select');
+        let runWorld = 1;
+        worldSelect.addEventListener('change', () => {
+            if (gameActive) return;
+            document.getElementById('world-description').textContent = worldSelect.value === '2'
+                ? '월드 2 · 같은 12개 스테이지 · 적에게 받는 피해 2배 · 잡몹 처치당 2코인'
+                : '월드 1 · 잡몹 처치당 1코인';
+        });
+        let selectedStage = 0;
+        let currentThemeIndex = 0;
+        const themes = [
+            {
+                name: 'CYBER SKY',
+                bg: 'radial-gradient(circle at center, #0a1128 0%, #02040a 100%)',
+                bossName: '보스: 사이버 드론 HQ',
+                bossColor: '#a855f7',
+                enemyType: 1 // 직선강하 적
+            },
+            {
+                name: 'DESERT STORM',
+                bg: 'radial-gradient(circle at center, #2b1f0d 0%, #0a0702 100%)',
+                bossName: '보스: 모래바람 포격기',
+                bossColor: '#f97316',
+                enemyType: 2 // 지그재그 회피 적
+            },
+            {
+                name: 'NIGHT RAID',
+                bg: 'radial-gradient(circle at center, #110826 0%, #03010a 100%)',
+                bossName: '보스: 심연의 요새',
+                bossColor: '#06b6d4',
+                enemyType: 3 // 돌진형 적
+            },
+            { name:'FROZEN FRONT', bg:'radial-gradient(circle at center,#12394c,#020e1b)', bossName:'보스: 프로스트 크라운', bossColor:'#88eaff', enemyType:4 },
+            { name:'VOLCANIC CORE', bg:'radial-gradient(circle at center,#421608,#100204)', bossName:'보스: 마그마 타이탄', bossColor:'#ff683b', enemyType:5 },
+            { name:'NEBULA VOID', bg:'radial-gradient(circle at center,#2e154a,#060216)', bossName:'보스: 네뷸라 리퍼', bossColor:'#c68aff', enemyType:6 },
+            { name:'THUNDER TEMPEST', bg:'radial-gradient(circle at center,#18372e,#030f12)', bossName:'보스: 템페스트 드래곤', bossColor:'#bdff69', enemyType:7 },
+            { name:'JURASSIC WILDS', bg:'radial-gradient(circle at center,#294d23,#06170d)', bossName:'보스: 티라노 메카 렉스', bossColor:'#86db57', enemyType:8 },
+            { name:'QUANTUM LAB', bg:'radial-gradient(circle at center,#103d45,#041019)', bossName:'보스: 퀀텀 코어 AI', bossColor:'#4cfff0', enemyType:9 },
+            { name:'ABYSSAL DEPTHS', bg:'radial-gradient(circle at center,#073b59,#010713)', bossName:'보스: 심해 크라켄', bossColor:'#4caaff', enemyType:10 },
+            { name:'ANCIENT RUINS', bg:'radial-gradient(circle at center,#49351c,#120c06)', bossName:'보스: 태양신의 수호자', bossColor:'#f3ce75', enemyType:11 },
+            { name:'FAR BEYOND', bg:'radial-gradient(ellipse at 50% 25%,#392758 0%,#100e29 45%,#02040d 100%)', bossName:'최종 보스: 아스트라 · 세계의 끝', bossColor:'#ffe6a0', enemyType:12 }
+        ];
+
+        const stageNames = ['사이버 하늘','사막 폭풍','야간 습격','얼음 지대','화산 중심부','성운 우주','번개 폭풍','쥐라기 시대','과학 기지','심해 탐사','고대 유적','머나먼 세상'];
+        const stageIcons = ['◈','☀','☾','❄','🌋','✧','ϟ','🦖','⚛','🐙','☥','♛'];
+        function renderStages() {
+            document.getElementById('stage-list').innerHTML=themes.map((theme,i)=>
+                `<div class="jet-card" style="border-color:${theme.bossColor}"><span class="jet-icon" style="color:${theme.bossColor}">${stageIcons[i]}</span><div style="flex:1"><strong>${i+1}. ${stageNames[i]}</strong><small>${theme.name}<br>${theme.bossName}</small></div><button data-stage="${i}" aria-label="${stageNames[i]} 출격">출격</button></div>`
+            ).join('');
+        }
+        document.getElementById('stage-list').addEventListener('click',e=>{
+            const button=e.target.closest('button[data-stage]');
+            if(button && !gameActive) startGame(Number(button.dataset.stage));
+        });
+
+        let fireRateLevel = 1;
+        let powerLevel = 1;
+        let rateUpgradeCost = 5;
+        let powerUpgradeCost = 10;
+
+        function resize() {
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const player = { x: 0, y: 0, size: 22, targetX: 0, targetY: 0, speed: 0.28 };
+
+        let blackHoles = [];
+        const BLACK_HOLE_INTERVAL = 5 * 60;
+        let lastHoleFrame = 0;
+        let blackHoleSprite = null;
+        let bullets = [];
+        let enemyBullets = [];
+        let starBombs = [];
+        let starBombSprite = null;
+        let enemies = [];
+        let boss = null;
+        let stars = [];
+
+        for (let i = 0; i < 40; i++) {
+            stars.push({
+                x: Math.random() * width, y: Math.random() * height,
+                size: Math.random() * 1.8 + 0.5, speed: Math.random() * 1.2 + 0.5
+            });
+        }
+
+        const heldKeys = new Set();
+        let keyboardControl = true;
+        let evolutionFlash = 0;
+        const evolutionNames = ['스카우트', '트윈 팽', '스트라이커', '피닉스', '노바 엠페러'];
+        window.addEventListener('keydown', (e) => {
+            if (!gameActive || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.code.startsWith('Arrow')) {
+                e.preventDefault();
+                heldKeys.add(e.code);
+                keyboardControl = true;
+            }
+            if (e.code === 'KeyA' || e.key === 'ㅁ' || e.code === 'KeyD' || e.key === 'ㅇ') {
+                e.preventDefault();
+                if (e.repeat) return;
+                if (e.code === 'KeyA' || e.key === 'ㅁ') upgradeRate();
+                else upgradePower();
+            }
+        });
+        window.addEventListener('keyup', (e) => heldKeys.delete(e.code));
+        window.addEventListener('blur', () => heldKeys.clear());
+
+        function handleMove(e) {
+            if (!gameActive) return;
+            if (!e.touches && keyboardControl) return;
+            keyboardControl = false;
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            player.targetX = clientX - rect.left;
+            player.targetY = clientY - rect.top - 40;
+        }
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchstart', handleMove, { passive: false });
+        window.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('pointerdown', (e) => {
+            if (!gameActive) return;
+            keyboardControl = false;
+            canvas.focus({ preventScroll: true });
+            handleMove(e);
+        });
+
+        function updateHPUI() {
+            let hearts = '';
+            for (let i = 0; i < playerHp; i++) hearts += '❤️';
+            hpDisplay.innerText = hearts;
+        }
+
+        function rewardEnemyKill() {
+            score += 100;
+            coins += runWorld;
+            scoreDisplay.innerText = 'SCORE: ' + score;
+            updateUpgradeUI();
+        }
+
+        function updateUpgradeUI() {
+            if (fireRateLevel < 5) {
+                rateCostText.innerText = `🪐 ${rateUpgradeCost}`;
+                upRateBtn.classList.toggle('disabled', coins < rateUpgradeCost);
+            } else {
+                rateCostText.innerText = 'MAX';
+                upRateBtn.classList.add('disabled');
+            }
+
+            if (powerLevel < 5) {
+                powerCostText.innerText = `🪐 ${powerUpgradeCost}`;
+                upPowerBtn.classList.toggle('disabled', coins < powerUpgradeCost);
+            } else {
+                powerCostText.innerText = 'MAX';
+                upPowerBtn.classList.add('disabled');
+            }
+            coinCountDisplay.innerText = coins;
+            saveHangar();
+            const canEvolve = powerLevel < 5 && coins >= powerUpgradeCost;
+            upPowerBtn.style.boxShadow = canEvolve ? '0 0 20px #00ffff88' : 'none';
+            document.getElementById('control-hint').innerText = powerLevel >= 5
+                ? '↑ ↓ ← → 이동 · 최종 진화 완료!'
+                : canEvolve
+                    ? '✨ 진화 가능! ㅇ키(D) 또는 진화 버튼을 누르세요'
+                    : `↑ ↓ ← → 이동 · 동전 ${coins}/${powerUpgradeCost} · 모으면 ㅇ키로 진화`;
+        }
+
+        function upgradeRate() {
+            if (!gameActive) return;
+            if (coins >= rateUpgradeCost && fireRateLevel < 5) {
+                coins -= rateUpgradeCost;
+                fireRateLevel++;
+                rateUpgradeCost += 5;
+                updateUpgradeUI();
+            }
+        }
+        upRateBtn.addEventListener('click', upgradeRate);
+
+        function upgradePower() {
+            if (!gameActive) return;
+            if (coins >= powerUpgradeCost && powerLevel < 5) {
+                coins -= powerUpgradeCost;
+                powerLevel++;
+                evolutionFlash = 60;
+                powerUpgradeCost += 12;
+                updateUpgradeUI();
+            }
+        }
+        upPowerBtn.addEventListener('click', upgradePower);
+
+        function applyTheme(index) {
+            currentThemeIndex = index % themes.length;
+            container.style.background = themes[currentThemeIndex].bg;
+            themeNameDisplay.innerText = 'W' + runWorld + ' · ' + themes[currentThemeIndex].name;
+        }
+
+        function startGame(stage = selectedStage) {
+            if (!Number.isInteger(stage) || stage < 0 || stage >= themes.length) return;
+            selectedStage = stage;
+            runWorld = worldSelect.value === '2' ? 2 : 1;
+            saveNickname();
+            runProfile = {name:nickname, difficulty:difficultySelect.value, jet:selectedJet, stage:selectedStage, world:runWorld};
+            runRecorded = false;
+            currentRunVersion++;
+            onlineRunPromise=beginOnlineRun({...runProfile});
+            activeParts = [...equippedParts];
+            shieldCharges = hasPart('shield') ? 2 : 0; pulseFlash = 0;
+            cancelAnimationFrame(animationId);
+            lastFrameTime = null;
+            resize();
+            gameActive = true;
+            heldKeys.clear(); keyboardControl = true; evolutionFlash = 0;
+            score = 0; frame = 0;
+            playerHp = (difficultyHearts[difficultySelect.value] || 3) + jets[selectedJet].hp;
+            invulnerableFrames = 0;
+            nextBossScore = BOSS_SCORE_INTERVAL;
+            scoreDisplay.innerText = 'SCORE: 0';
+            fireRateLevel = 1; powerLevel = 1;
+            rateUpgradeCost = 5; powerUpgradeCost = 10;
+
+            bullets = []; enemyBullets = []; starBombs = []; enemies = []; boss = null;
+            bossHpBar.style.display = 'none';
+            document.getElementById('boss-pattern').style.display = 'none';
+
+            player.size = 22;
+            player.x = width / 2; player.y = height - 120;
+            player.targetX = player.x; player.targetY = player.y;
+            blackHoles = []; lastHoleFrame = 0;
+
+            applyTheme(selectedStage);
+            updateHPUI();
+
+            startScreen.style.display = 'none';
+            document.getElementById('lobby-btn').style.display = 'block';
+            canvas.focus({ preventScroll: true });
+            gameoverScreen.style.display = 'none';
+
+            updateUpgradeUI();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        restartBtn.addEventListener('click', () => startGame(selectedStage));
+
+        function completeStage() {
+            if (!gameActive) return;
+            gameActive = false; cancelAnimationFrame(animationId); heldKeys.clear();
+            if (runProfile) runProfile.cleared = true;
+            recordRun(); saveHangar();
+            document.getElementById('result-title').textContent = selectedStage === 11 ? '머나먼 세상 · 정복 완료!' : 'STAGE CLEAR!';
+            document.getElementById('result-title').style.color = '#6cf5c6';
+            document.getElementById('final-score').textContent = '월드 ' + runWorld + ' · ' + stageNames[selectedStage] + ' · SCORE: ' + score;
+            restartBtn.textContent = '같은 스테이지 재도전';
+            gameoverScreen.style.display = 'flex';
+            document.getElementById('lobby-btn').style.display = 'none';
+        }
+        function gameOver() {
+            if (!gameActive) return;
+            document.getElementById('result-title').textContent = 'MISSION FAILED';
+            document.getElementById('result-title').style.color = '#ff3366';
+            restartBtn.textContent = '같은 스테이지 재도전';
+            gameActive = false;
+            recordRun();
+            document.getElementById('final-score').innerText = 'SCORE: ' + score;
+            gameoverScreen.style.display = 'flex';
+            document.getElementById('lobby-btn').style.display = 'none';
+        }
+
+        function hitPlayer(damage = 1) {
+            if (!gameActive || invulnerableFrames > 0) return;
+            if (shieldCharges > 0) {shieldCharges--;invulnerableFrames=50;return;}
+            playerHp = Math.max(0, playerHp - damage * runWorld);
+            updateHPUI();
+            invulnerableFrames = 50;
+
+            if (playerHp <= 0) {
+                gameOver();
+            }
+        }
+
+        // 플레이어 그리기
+        function drawPlayer() {
+            if (keyboardControl) {
+                let dx = Number(heldKeys.has('ArrowRight')) - Number(heldKeys.has('ArrowLeft'));
+                let dy = Number(heldKeys.has('ArrowDown')) - Number(heldKeys.has('ArrowUp'));
+                const length = Math.hypot(dx, dy) || 1;
+                player.x += dx / length * jets[selectedJet].speed;
+                player.y += dy / length * jets[selectedJet].speed;
+                player.targetX = player.x; player.targetY = player.y;
+            } else {
+                player.x += (player.targetX - player.x) * player.speed * (jets[selectedJet].speed / 6);
+                player.y += (player.targetY - player.y) * player.speed * (jets[selectedJet].speed / 6);
+            }
+
+            player.x = Math.max(player.size, Math.min(width - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(height - player.size, player.y));
+
+            if (invulnerableFrames > 0) {
+                invulnerableFrames--;
+                if (Math.floor(invulnerableFrames / 4) % 2 === 0) return;
+            }
+
+            drawCraft(player.x, player.y, player.size, powerLevel, skins[currentSkin].highlight, false);
+            drawParts(player.x,player.y,activeParts,shieldCharges);
+            ctx.save();
+            ctx.fillStyle = '#bcecff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('LV.' + powerLevel + ' ' + evolutionNames[powerLevel - 1], player.x, player.y + 49);
+            if (evolutionFlash > 0) {
+                evolutionFlash--;
+                ctx.strokeStyle = skins[currentSkin].highlight;
+                ctx.globalAlpha = evolutionFlash / 60;
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(player.x, player.y, 35 + (60 - evolutionFlash) * 2, 0, Math.PI * 2); ctx.stroke();
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif';
+                ctx.fillText('EVOLUTION · ' + evolutionNames[powerLevel - 1], width / 2, height * 0.35);
+            }
+            ctx.restore();
+        }
+
+        const craftSprites = new Map();
+        const projectileSprites = new Map();
+        function makeSprite(width, height, originX, originY, paint) {
+            const sprite = document.createElement('canvas');
+            sprite.width = width; sprite.height = height;
+            const mainContext = ctx;
+            try {
+                ctx = sprite.getContext('2d');
+                ctx.translate(originX, originY);
+                paint();
+            } finally { ctx = mainContext; }
+            return sprite;
+        }
+        function drawCraft(x, y, size, level, color, hostile) {
+            const key = [size, level, color, hostile].join(':');
+            if (!craftSprites.has(key)) {
+                const side = Math.ceil(size * 4 + 40);
+                craftSprites.set(key, makeSprite(side, side, side / 2, side / 2,
+                    () => paintCraft(0, 0, size, level, color, hostile)));
+            }
+            const sprite = craftSprites.get(key);
+            ctx.drawImage(sprite, x - sprite.width / 2, y - sprite.height / 2);
+        }
+        function paintCraft(x, y, size, level, color, hostile) {
+            ctx.save(); ctx.translate(x, y);
+            if (hostile) ctx.rotate(Math.PI);
+            ctx.scale(size, size);
+            const shape = (points, fill, stroke = color) => {
+                ctx.beginPath(); points.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py));
+                ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+                ctx.strokeStyle = stroke; ctx.lineWidth = 0.045; ctx.stroke();
+            };
+            ctx.shadowColor = color; ctx.shadowBlur = 12;
+            const flame = 0.5 + Math.sin(frame * 0.7) * 0.15;
+            for (let side of [-1, 1]) {
+                const spread = 0.45 + level * 0.1;
+                shape([[side * spread - 0.12,0.65],[side * spread,1.2 + flame],[side * spread + 0.12,0.65]], color);
+                shape([[side * spread - 0.045,0.7],[side * spread,1.35],[side * spread + 0.045,0.7]], '#ffffff');
+                shape([[side * 0.2,-0.6],[side * (0.85 + level * 0.12),0.25],[side * (1 + level * 0.09),0.7],[side * 0.25,0.4]], '#1d3552');
+                if (level >= 2) shape([[side * 0.65,-0.2],[side * 0.85,-0.85],[side * 1.02,0.55],[side * 0.7,0.6]], '#496680');
+                if (level >= 3) shape([[side * 0.18,-1],[side * 0.7,-0.5],[side * 0.85,-0.2],[side * 0.15,-0.45]], '#85a6bf');
+                if (level >= 4) shape([[side * 0.85,0.1],[side * 1.5,-0.7],[side * 1.3,0.6],[side * 1.0,0.85]], '#314460');
+                if (level >= 5) {
+                    shape([[side * 1.55,-0.7],[side * 1.72,-0.1],[side * 1.55,0.6],[side * 1.4,-0.1]], '#b5d8e9');
+                    ctx.fillStyle = color; ctx.fillRect(side * 1.55 - 0.035,-0.5,0.07,0.65);
+                }
+            }
+            if (hostile) {
+                if (color === '#88eaff') {
+                    for (const side of [-1,1]) shape([[side*.5,-.5],[side*1.45,-.9],[side*1.05,.25]], '#bdefff');
+                } else if (color === '#ff683b') {
+                    for (const side of [-1,1]) shape([[side*.6,-.7],[side*1.2,-.7],[side*1.2,.65],[side*.6,.65]], '#6c2c1d');
+                } else if (color === '#c68aff') {
+                    ctx.strokeStyle=color; ctx.lineWidth=.09; ctx.beginPath(); ctx.ellipse(0,0,1.5,.8,0,0,Math.PI*2); ctx.stroke();
+                } else if (color === '#86db57') {
+                    for(const side of [-1,1]) {
+                        shape([[side*.2,-.6],[side*1.5,-1],[side*.95,.1],[side*1.3,.6],[side*.2,.4]], '#345a22');
+                        for(let i=0;i<3;i++) shape([[side*(.4+i*.25),-.15],[side*(.55+i*.25),.35],[side*(.7+i*.25),-.1]],'#dfedbc');
+                    }
+                } else if (color === '#4cfff0') {
+                    for(const side of [-1,1]) shape([[side*.55,-.6],[side*1.2,-.6],[side*1.2,.7],[side*.55,.7]],'#17525a');
+                    ctx.strokeStyle=color;ctx.lineWidth=.05;ctx.strokeRect(-.65,-.65,1.3,1.3);
+                } else if (color === '#4caaff') {
+                    for(const side of [-1,1]) shape([[side*.2,-.5],[side*1.45,-.1],[side*1.15,.6],[side*.6,1.1],[side*.3,.3]],'#173c6d');
+                } else if (color === '#f3ce75') {
+                    for(const side of [-1,1]) for(let i=0;i<3;i++) shape([[side*.3,-.2],[side*(1.5-i*.2),-.65+i*.45],[side*(1.4-i*.2),-.1+i*.45],[side*.3,.5]],'#78602c');
+                } else if (color === '#bdff69') {
+                    for (const side of [-1,1]) shape([[side*.35,-.9],[side*1.4,-.5],[side*.8,0],[side*1.5,.5],[side*.35,.3]], '#436342');
+                }
+            }
+            if (!hostile && color === '#bda0ff') {
+                for (const side of [-1,1]) {
+                    shape([[side*.3,-.7],[side*1.65,-1],[side*1.35,-.15],[side*1.65,.9],[side*.55,.45]], '#221533', '#d6c2ff');
+                    shape([[side*.7,-.4],[side*1.3,-.6],[side*.95,.15]], '#ba97ff', '#f6eaff');
+                }
+                ctx.strokeStyle='#efdfff'; ctx.lineWidth=.065;
+                ctx.beginPath();ctx.ellipse(0,.05,.65,.85,0,0,Math.PI*2);ctx.stroke();
+            }
+            ctx.shadowBlur = 3;
+            const metal = ctx.createLinearGradient(-0.4, 0, 0.4, 0);
+            metal.addColorStop(0, '#34465d'); metal.addColorStop(0.5, '#daeaf5'); metal.addColorStop(1, '#48637b');
+            shape([[0,-1.5],[-0.32,-0.25],[-0.35,0.65],[0,0.45],[0.35,0.65],[0.32,-0.25]], metal);
+            shape([[0,-0.95],[-0.14,-0.35],[0,-0.1],[0.14,-0.35]], color, '#e1ffff');
+            ctx.restore();
+        }
+
+        // 👾 테마별 적 생성 기믹
+        function spawnEnemy() {
+            if (enemies.length >= 8) return;
+            const type = currentThemeIndex === 11 ? 1 + Math.floor(Math.random()*11) : themes[currentThemeIndex].enemyType;
+
+            if (type === 1) { // CYBER SKY: 일직선 가속 적
+                enemies.push({
+                    type: 1, x: Math.random() * (width - 60) + 30, y: -30,
+                    size: 18, speed: Math.random() * 0.8 + 1.8,
+                    lastShoot: frame
+                });
+            } else if (type === 2) { // DESERT STORM: 지그재그 패트롤 적
+                enemies.push({
+                    type: 2, x: Math.random() * (width - 60) + 30, y: -30,
+                    size: 20, speed: 1.2, angle: Math.random() * Math.PI,
+                    lastShoot: frame
+                });
+            } else if (type === 3) { // NIGHT RAID: 유도 돌진 적
+                enemies.push({
+                    type: 3, x: Math.random() * (width - 60) + 30, y: -30,
+                    size: 16, speed: 2.6,
+                    targetX: player.x, targetY: player.y,
+                    lastShoot: frame
+                });
+            } else {
+                const spawnX = Math.random() * (width - 100) + 50;
+                enemies.push({type, x:spawnX, y:-30, baseX:spawnX, size:type === 5 || type === 11 ? 24 : 18,
+                    speed:type === 7 || type === 8 ? 3 : type === 5 || type === 11 ? 1.25 : 1.8,
+                    age:0, phase:Math.random()*Math.PI*2, lastShoot:frame});
+            }
+        }
+
+        function drawEnemy(e) {
+            const level = Math.min(5, e.type + Math.floor(score / 1800));
+            const color = ['#b078ff', '#ffb347', '#ff4488', '#88eaff', '#ff683b', '#c68aff', '#bdff69', '#86db57', '#4cfff0', '#4caaff', '#f3ce75'][e.type - 1];
+            drawCraft(e.x, e.y, e.size * 0.8, level, color, true);
+        }
+
+        // 👑 테마별 보스 스폰 및 패턴
+        function spawnBoss() {
+            const curTheme = themes[currentThemeIndex];
+            const isFinal = currentThemeIndex === 11;
+            boss = {
+                theme: currentThemeIndex,
+                x: width / 2, y: -80, targetY: isFinal ? 195 : 100,
+                size: isFinal ? 82 : Math.min(72, 50 + currentThemeIndex * 5),
+                hp: isFinal ? 1800 : Math.round((60 + currentThemeIndex * 40) * 0.85),
+                maxHp: isFinal ? 1800 : Math.round((60 + currentThemeIndex * 40) * 0.85),
+                patternAge:0, activePattern:0, patternLabel:null, nextBombAt:420,
+                dir: 1, speed: isFinal ? 1.6 : 1.2 + currentThemeIndex * 0.4
+            };
+            bossNameText.innerText = curTheme.bossName;
+            bossHpBar.style.display = 'block';
+            bossHpInner.style.width = '100%';
+        }
+
+        let rexBodySprite = null, rexJawSprite = null;
+        function drawJurassicBoss(x, y, size) {
+            if (!rexBodySprite) {
+                rexBodySprite = makeSprite(240,260,120,130, () => {
+                    const plate = (points, fill, edge='#8bc763') => {
+                        ctx.beginPath();points.forEach(([px,py],i)=>i?ctx.lineTo(px,py):ctx.moveTo(px,py));ctx.closePath();
+                        ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=edge;ctx.lineWidth=2;ctx.stroke();
+                    };
+                    // Armored tail and serrated spine, rather than aircraft wings.
+                    plate([[-22,-35],[-16,-78],[12,-112],[7,-72],[26,-38]],'#365b30');
+                    for(let i=0;i<4;i++) plate([[-17,-48-i*13],[-30,-56-i*13],[-12,-63-i*13]],'#c2dc91');
+                    plate([[-34,-49],[-51,-13],[-38,35],[38,35],[51,-13],[34,-49]],'#315536');
+                    for(const side of [-1,1]) {
+                        plate([[side*31,-20],[side*56,-2],[side*52,17],[side*39,6]],'#537c44');
+                        // Tiny bent forearms with two ivory claws.
+                        plate([[side*48,9],[side*58,25],[side*67,16],[side*58,33],[side*48,25]],'#a5b68a');
+                        plate([[side*29,-29],[side*46,-43],[side*54,-29],[side*42,-14]],'#718755');
+                        ctx.fillStyle='#91f47d';ctx.fillRect(side*33-3,-24,6,10);
+                    }
+                    // Broad brow, forward snout and a deep, tooth-lined mouth.
+                    plate([[-46,-25],[-57,4],[-48,31],[-38,55],[38,55],[48,31],[57,4],[46,-25],[0,-36]],'#55783f');
+                    plate([[-49,7],[-40,48],[0,61],[40,48],[49,7],[27,-2],[-27,-2]],'#090d0a','#bfdb84');
+                    for(const side of [-1,1]) {
+                        plate([[side*8,-16],[side*41,-23],[side*45,-8],[side*18,-2]],'#253626');
+                        plate([[side*15,-13],[side*37,-17],[side*36,-8],[side*18,-5]],'#ffbe36','#ffe3a0');
+                        ctx.fillStyle='#111';ctx.fillRect(side*27-2,-16,4,10);
+                        for(let i=0;i<4;i++) {
+                            const tx=side*(16+i*8), ty=8+i*3;
+                            plate([[tx-4,ty],[tx+4,ty],[tx,ty+17]],'#f3e7bd','#b1b18b');
+                        }
+                    }
+                    plate([[-25,-7],[-33,12],[-18,22],[18,22],[33,12],[25,-7]],'#729050');
+                    ctx.fillStyle='#17251b';ctx.beginPath();ctx.ellipse(-13,10,4,3,0,0,Math.PI*2);ctx.ellipse(13,10,4,3,0,0,Math.PI*2);ctx.fill();
+                    for(const side of [-1,1]) {
+                        ctx.fillStyle='#b6c5a0';ctx.beginPath();ctx.arc(side*45,0,4,0,Math.PI*2);ctx.fill();
+                    }
+                });
+                rexJawSprite = makeSprite(130,70,65,15, () => {
+                    ctx.beginPath();ctx.moveTo(-40,0);ctx.lineTo(-32,27);ctx.lineTo(0,37);ctx.lineTo(32,27);ctx.lineTo(40,0);ctx.lineTo(0,14);ctx.closePath();
+                    ctx.fillStyle='#47643b';ctx.fill();ctx.strokeStyle='#b5d281';ctx.lineWidth=2;ctx.stroke();
+                    for(let i=0;i<7;i++) {
+                        const tx=-27+i*9,ty=9-Math.abs(tx)*.18;
+                        ctx.beginPath();ctx.moveTo(tx-4,ty+5);ctx.lineTo(tx,ty-8);ctx.lineTo(tx+4,ty+5);ctx.closePath();ctx.fillStyle='#f3e7bd';ctx.fill();
+                    }
+                    ctx.fillStyle='#1b2b22';ctx.fillRect(-14,22,28,6);
+                    ctx.fillStyle='#aaff78';ctx.fillRect(-9,23,18,3);
+                });
+            }
+            ctx.save();ctx.translate(x,y);ctx.scale(size/72,size/72);
+            ctx.drawImage(rexBodySprite,-120,-130);
+            const jawOpen=5+Math.sin(frame*.055)*4;
+            ctx.drawImage(rexJawSprite,-65,29+jawOpen);
+            ctx.restore();
+        }
+
+        let finalBodySprite = null, finalHaloSprite = null;
+        function drawFinalBoss(x,y,size,pattern) {
+            if(!finalBodySprite) {
+                finalBodySprite=makeSprite(320,320,160,160,()=>{
+                    const shape=(points,fill,stroke='#ffe5a0')=>{ctx.beginPath();points.forEach(([px,py],i)=>i?ctx.lineTo(px,py):ctx.moveTo(px,py));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();};
+                    for(const side of [-1,1]) for(let i=0;i<4;i++) {
+                        shape([[side*27,-27+i*16],[side*(132-i*13),-90+i*36],[side*(116-i*12),-18+i*26],[side*30,35+i*9]],['#342951','#524367','#87718f','#ccb2c2'][i]);
+                        shape([[side*(55+i*15),-26+i*9],[side*(61+i*15),-39+i*9],[side*(68+i*15),-24+i*9]],'#fcf0bc');
+                    }
+                    shape([[-38,-37],[-43,36],[0,87],[43,36],[38,-37],[0,-68]],'#241d3b');
+                    shape([[-38,-45],[-47,-91],[-23,-66],[0,-112],[23,-66],[47,-91],[38,-45]],'#967952');
+                    shape([[-25,-30],[0,-53],[25,-30],[27,30],[0,61],[-27,30]],'#75608c');
+                    shape([[-18,-9],[0,-31],[18,-9],[0,29]],'#edfcff','#ffffff');
+                    shape([[-9,-8],[0,-20],[9,-8],[0,15]],'#8969f9','#c7b8ff');
+                    for(let i=0;i<3;i++) {ctx.fillStyle='#ffe5a0';ctx.fillRect(-12+i*10,43,4,14);}
+                });
+                finalHaloSprite=makeSprite(320,320,160,160,()=>{
+                    ctx.strokeStyle='#cab0f0';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,137,0,Math.PI*2);ctx.stroke();
+                    for(let i=0;i<11;i++) {
+                        const a=i*Math.PI*2/11;ctx.save();ctx.rotate(a);ctx.translate(0,-137);
+                        ctx.fillStyle=themes[i].bossColor;ctx.strokeStyle='#fff2c3';ctx.lineWidth=1;
+                        ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(5,0);ctx.lineTo(0,8);ctx.lineTo(-5,0);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+                    }
+                });
+            }
+            ctx.save();ctx.translate(x,y);ctx.scale(size/82,size/82);
+            ctx.save();ctx.rotate(frame*.006);ctx.drawImage(finalHaloSprite,-160,-160);ctx.restore();
+            ctx.drawImage(finalBodySprite,-160,-160);
+            ctx.strokeStyle=themes[pattern].bossColor;ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,38,frame*.025,frame*.025+Math.PI*1.6);ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawBoss() {
+            if (!boss) return;
+            if (boss.y < boss.targetY) boss.y += 1.2;
+            else {
+                boss.x += boss.speed * boss.dir;
+                const margin=boss.theme===11 ? Math.min(145,width/2-5) : 60;
+                if (boss.x < margin || boss.x > width - margin) boss.dir *= -1;
+            }
+
+            const x = boss.x, y = boss.y, s = boss.size;
+            const theme = themes[boss.theme];
+
+            if (boss.theme === 11) {
+                boss.activePattern = Math.floor(boss.patternAge / 300) % 11;
+                drawFinalBoss(x,y,s,boss.activePattern);
+                const label = '아스트라 · ' + stageNames[boss.activePattern] + ' 패턴 · 전환 ' + Math.ceil((300-boss.patternAge%300)/60) + '초';
+                if (boss.patternLabel !== label) {
+                    boss.patternLabel=label;
+                    const status=document.getElementById('boss-pattern');status.style.display='block';status.textContent=label;
+                }
+            } else if (boss.theme === 7) {
+                drawJurassicBoss(x,y,s);
+            } else {
+            drawCraft(x, y, s * 0.85, Math.min(5, boss.theme + 3), theme.bossColor, true);
+            ctx.save(); ctx.translate(x, y); ctx.rotate(frame * 0.015);
+            ctx.strokeStyle = theme.bossColor; ctx.shadowColor = theme.bossColor; ctx.shadowBlur = 15;
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath(); ctx.arc(0, 0, s * 0.55, i * Math.PI * 2 / 3, i * Math.PI * 2 / 3 + 1.25); ctx.stroke();
+            }
+            ctx.restore();
+
+            }
+
+            if (boss.theme === 11) {
+                if (boss.y >= boss.targetY) {
+                    fireBossPattern(boss.activePattern,x,y,s,boss.patternAge % 300);
+                    boss.patternAge++;
+                    if (boss.patternAge >= boss.nextBombAt) {
+                        plantStarBomb();
+                        boss.nextBombAt = boss.patternAge + 420 + Math.floor(Math.random()*181);
+                    }
+                }
+            } else fireBossPattern(boss.theme,x,y,s,frame);
+        }
+
+        function fireBossPattern(pattern,x,y,s,frame) {
+            const firstNewBullet = enemyBullets.length;
+            // 🔥 보스 난이도별 패턴
+            if (pattern === 0) { // CYBER SKY 보스 패턴 (3방향 샷 + 탄막)
+                if (frame % 75 === 0) {
+                    for (const a of [-0.22, 0.22]) {
+                        enemyBullets.push({
+                            x: x, y: y + s * 0.5,
+                            vx: Math.sin(a) * 2.5 * 0.9, vy: Math.cos(a) * 2.5 * 0.9
+                        });
+                    }
+                }
+            } else if (pattern === 1) { // DESERT STORM 보스 패턴 (빠른 조준 샷 + 링탄)
+                if (frame % 60 === 0) {
+                    let angle = Math.atan2(player.y - y, player.x - x);
+                    enemyBullets.push({
+                        x: x, y: y + s * 0.5,
+                        vx: Math.cos(angle) * 3.5 * 0.9, vy: Math.sin(angle) * 3.5 * 0.9
+                    });
+                }
+                if (frame % 150 === 0) {
+                    for (let i = 0; i < 6; i++) {
+                        let a = (Math.PI * 2 / 6) * i;
+                        enemyBullets.push({
+                            x: x, y: y,
+                            vx: Math.cos(a) * 2.0 * 0.9, vy: Math.sin(a) * 2.0 * 0.9
+                        });
+                    }
+                }
+            } else if (pattern === 2) { // NIGHT RAID 보스 패턴 (8방향 회전 + 탄막 폭풍)
+                if (frame % 40 === 0) {
+                    let rot = (frame / 10);
+                    for (let i = 0; i < 3; i++) {
+                        let a = rot + (Math.PI * 2 / 3) * i;
+                        enemyBullets.push({
+                            x: x, y: y + s * 0.2,
+                            vx: Math.cos(a) * 3.0 * 0.9, vy: Math.sin(a) * 3.0 * 0.9
+                        });
+                    }
+                }
+            } else if (pattern === 3 && frame % 80 === 0) {
+                for (let i=-2;i<=2;i++) fireBoss(x,y+s*.3,Math.PI/2+i*.18,2.6);
+            } else if (pattern === 4 && frame % 125 === 0) {
+                const gap = Math.floor(frame/125) % 6;
+                for(let i=0;i<6;i++) if(i!==gap && i!==(gap+1)%6) fireBoss((i+.5)*width/6,y+s*.3,Math.PI/2,2.5);
+            } else if (pattern === 5 && frame % 18 === 0) {
+                const angle = frame*.035;
+                fireBoss(x,y,angle,2.8); fireBoss(x,y,angle+Math.PI,2.8);
+            } else if (pattern === 6 && frame % 65 === 0) {
+                for(const side of [-1,1]) {
+                    const sx=x+side*s*.8;
+                    const aim=Math.atan2(player.y-y,player.x-sx);
+                    for(const i of [-1,1]) fireBoss(sx,y+s*.3,aim+i*.16,3.3);
+                }
+            } else if (pattern === 7 && frame % 95 === 0) {
+                // Jaw-shaped converging volleys from both sides.
+                for(const side of [-1,1]) for(let i=0;i<2;i++) fireBoss(x+side*s*.8,y+s*.3,Math.PI/2+side*(.15+i*.18),2.8);
+            } else if (pattern === 8 && frame % 100 === 0) {
+                // Rotating scientific lattice with a visible safe lane.
+                const gap=Math.floor(frame/100)%6;
+                for(let i=0;i<6;i++) if(i!==gap) fireBoss(x,y,Math.PI*2*i/6+Math.PI/6,2.7);
+            } else if (pattern === 9 && frame % 85 === 0) {
+                for(let i=-1;i<=1;i++) fireBoss(x,y+s*.3,Math.PI/2+i*.22+Math.sin(frame*.02)*.18,2.3);
+            } else if (pattern === 10 && frame % 120 === 0) {
+                for(let i=0;i<7;i++) fireBoss(x,y,Math.PI*2*i/7+frame*.003,2.5);
+            }
+            for (let i=firstNewBullet;i<enemyBullets.length;i++) {
+                enemyBullets[i].damage = boss && boss.theme === 11 ? 3 : 1;
+            }
+        }
+
+        function plantStarBomb() {
+            starBombs.push({
+                x:Math.max(30,Math.min(width-30,player.x+(Math.random()-.5)*70)),
+                y:Math.max(80,Math.min(height-65,player.y+(Math.random()-.5)*70)),
+                fuse:180, flash:20, radius:80
+            });
+        }
+        function updateStarBombs() {
+            if (!starBombs.length) return;
+            if (!starBombSprite) starBombSprite=makeSprite(64,64,32,32,()=>{
+                ctx.beginPath();
+                for(let i=0;i<10;i++) {
+                    const angle=-Math.PI/2+i*Math.PI/5,r=i%2?10:23;
+                    if(i)ctx.lineTo(Math.cos(angle)*r,Math.sin(angle)*r);else ctx.moveTo(Math.cos(angle)*r,Math.sin(angle)*r);
+                }
+                ctx.closePath();ctx.fillStyle='#ffcd4c';ctx.fill();ctx.strokeStyle='#fff3bd';ctx.lineWidth=2;ctx.stroke();
+                ctx.fillStyle='#6c2335';ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.fill();
+            });
+            for(let i=starBombs.length-1;i>=0;i--) {
+                const bomb=starBombs[i];
+                if(bomb.fuse>0) {
+                    bomb.fuse--;
+                    ctx.save();ctx.translate(bomb.x,bomb.y);
+                    ctx.globalAlpha=.15+Math.sin(frame*.15)*.04;
+                    ctx.fillStyle='#ff4260';ctx.beginPath();ctx.arc(0,0,bomb.radius,0,Math.PI*2);ctx.fill();
+                    ctx.globalAlpha=1;ctx.strokeStyle='#ff8492';ctx.lineWidth=2;
+                    ctx.beginPath();ctx.arc(0,0,bomb.radius,0,Math.PI*2);ctx.stroke();
+                    ctx.drawImage(starBombSprite,-32,-32);
+                    ctx.fillStyle='#fff4c3';ctx.font='bold 15px sans-serif';ctx.textAlign='center';ctx.fillText(Math.ceil(bomb.fuse/60)+'초',0,-33);
+                    ctx.restore();
+                    if(bomb.fuse===0 && Math.hypot(player.x-bomb.x,player.y-bomb.y)<=bomb.radius) hitPlayer(3);
+                } else {
+                    ctx.save();ctx.globalAlpha=bomb.flash/20;ctx.fillStyle='#ffb84d';ctx.strokeStyle='#fff1c2';ctx.lineWidth=4;
+                    ctx.beginPath();ctx.arc(bomb.x,bomb.y,bomb.radius,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
+                    if(--bomb.flash<=0)starBombs.splice(i,1);
+                }
+                if(!gameActive) return;
+            }
+        }
+
+        function fireBoss(x,y,angle,speed) {
+            fireEnemy(x,y,angle,speed * 0.9);
+        }
+
+        function fireEnemy(x,y,angle,speed) {
+            if (enemyBullets.length >= 160) return;
+            enemyBullets.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
+        }
+
+        function drawProjectile(b, hostile) {
+            const key = hostile ? 'enemy' : selectedJet;
+            if (!projectileSprites.has(key)) {
+                projectileSprites.set(key, makeSprite(64, 96, 32, 32,
+                    () => paintProjectile({x:0, y:0, vx:0, vy:-1}, hostile)));
+            }
+            ctx.save(); ctx.translate(b.x, b.y);
+            if (hostile) ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2);
+            ctx.drawImage(projectileSprites.get(key), -32, -32);
+            ctx.restore();
+        }
+        function paintProjectile(b, hostile) {
+            ctx.save(); ctx.translate(b.x, b.y);
+            const color = hostile ? '#ff486f' : jets[selectedJet].color;
+            ctx.rotate(hostile ? Math.atan2(b.vy, b.vx) + Math.PI / 2 : 0);
+            ctx.shadowColor = color; ctx.shadowBlur = hostile ? 9 : 16;
+            const trail = ctx.createLinearGradient(0, -5, 0, 26);
+            trail.addColorStop(0, color); trail.addColorStop(1, 'transparent');
+            ctx.fillStyle = trail;
+            ctx.beginPath(); ctx.moveTo(-3,0); ctx.lineTo(0, hostile ? 16 : 30); ctx.lineTo(3,0); ctx.fill();
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.ellipse(0, 0, hostile ? 4 : selectedJet === 3 ? 5 : 3, hostile ? 4 : 9, 0, 0, Math.PI * 2); ctx.fill();
+            if (!hostile && selectedJet === 2) {
+                ctx.fillStyle = '#dce9ff'; ctx.beginPath(); ctx.moveTo(0,-11); ctx.lineTo(-4,5); ctx.lineTo(4,5); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#ffb347'; ctx.fillRect(-1,5,2,8);
+            } else {
+                ctx.fillStyle = '#fff8ed'; ctx.beginPath(); ctx.ellipse(0,-1,1.3,hostile ? 2 : 5,0,0,Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function updateBlackHoles() {
+            if (selectedJet !== 4) return;
+            // Spawn every five seconds of game time, independently of player movement.
+            if (frame - lastHoleFrame >= BLACK_HOLE_INTERVAL) {
+                const marginX = Math.min(65, width / 4);
+                const marginY = Math.min(100, height / 4);
+                blackHoles.push({
+                    x: marginX + Math.random() * (width - marginX * 2),
+                    y: marginY + Math.random() * (height - marginY * 2),
+                    life:180
+                });
+                lastHoleFrame = frame;
+            }
+            if (!blackHoleSprite && blackHoles.length) {
+                blackHoleSprite = makeSprite(144,144,72,72, () => {
+                    const glow=ctx.createRadialGradient(0,0,8,0,0,65);
+                    glow.addColorStop(0,'#10051e'); glow.addColorStop(.28,'#be87ff');
+                    glow.addColorStop(.4,'#6534a999'); glow.addColorStop(1,'#6534a900');
+                    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,65,0,Math.PI*2);ctx.fill();
+                    ctx.strokeStyle='#dac5ff';ctx.lineWidth=2;
+                    ctx.beginPath();ctx.ellipse(0,0,34,12,-.35,0,Math.PI*2);ctx.stroke();
+                    ctx.fillStyle='#030107';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
+                });
+            }
+            for(let h=blackHoles.length-1;h>=0;h--) {
+                const hole=blackHoles[h];
+                if (--hole.life <= 0) {blackHoles.splice(h,1);continue;}
+                ctx.save();ctx.translate(hole.x,hole.y);ctx.rotate(frame*.025);
+                ctx.globalAlpha=Math.min(1,hole.life/25);ctx.drawImage(blackHoleSprite,-72,-72);ctx.restore();
+                for(let i=enemies.length-1;i>=0;i--) {
+                    const e=enemies[i],dx=hole.x-e.x,dy=hole.y-e.y,d=Math.hypot(dx,dy);
+                    if(d>100) continue;
+                    const pull=Math.min(d,6+(1-d/100)*7);
+                    const mx=d ? dx/d*pull : 0, my=d ? dy/d*pull : 0;
+                    e.x+=mx;e.y+=my;
+                    if(typeof e.baseX==='number') e.baseX+=mx;
+                    if(d-pull<18) {
+                        enemies.splice(i,1);
+                        rewardEnemyKill();
+                    }
+                }
+                for(let i=enemyBullets.length-1;i>=0;i--) {
+                    const b=enemyBullets[i],dx=hole.x-b.x,dy=hole.y-b.y,d=Math.hypot(dx,dy);
+                    if(d>110) continue;
+                    const pull=Math.min(d,10);
+                    if(d) {b.x+=dx/d*pull;b.y+=dy/d*pull;}
+                    if(d-pull<16) enemyBullets.splice(i,1);
+                }
+            }
+        }
+
+        // 메인 게임 루프
+        function gameLoop(timestamp) {
+            if (!gameActive) return;
+            if (typeof timestamp === 'number') {
+                const interval = 1000 / 60;
+                if (lastFrameTime !== null && timestamp - lastFrameTime < interval - 0.5) {
+                    animationId = requestAnimationFrame(gameLoop);
+                    return;
+                }
+                lastFrameTime = lastFrameTime === null ? timestamp
+                    : timestamp - Math.max(0, timestamp - lastFrameTime) % interval;
+            }
+
+            ctx.clearRect(0, 0, width, height);
+            frame++;
+
+            if (score >= nextBossScore && !boss) {
+                spawnBoss();
+            }
+
+            // 별 배경
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < stars.length; i++) {
+                let star = stars[i];
+                star.y += star.speed;
+                if (star.y > height) star.y = 0;
+                ctx.fillRect(star.x, star.y, star.size, star.size);
+            }
+
+            if (currentThemeIndex >= 3) {
+                ctx.save(); ctx.globalAlpha=.18; ctx.strokeStyle=themes[currentThemeIndex].bossColor; ctx.fillStyle=ctx.strokeStyle; ctx.lineWidth=1;
+                for(let i=0;i<10;i++) {
+                    const px=(i*73+29)%width, py=(i*113+frame*(currentThemeIndex===6?4:1))%height;
+                    ctx.beginPath();
+                    if(currentThemeIndex===3) {ctx.moveTo(px-5,py);ctx.lineTo(px+5,py);ctx.moveTo(px,py-5);ctx.lineTo(px,py+5);}
+                    else if(currentThemeIndex===4) {ctx.moveTo(px,py);ctx.lineTo(px+4,py+20);}
+                    else if(currentThemeIndex===5) {ctx.arc(px,py,12+i%3*6,0,Math.PI*2);}
+                    else if(currentThemeIndex===6) {ctx.moveTo(px,py);ctx.lineTo(px-7,py+25);}
+                    else if(currentThemeIndex===7) {ctx.moveTo(px,py+20);ctx.lineTo(px,py-20);ctx.moveTo(px-14,py-4);ctx.lineTo(px,py-14);ctx.lineTo(px+14,py-4);}
+                    else if(currentThemeIndex===8) {ctx.rect(px-12,py-12,24,24);ctx.moveTo(px,py-12);ctx.lineTo(px,py-30);}
+                    else if(currentThemeIndex===9) {ctx.arc(px,height-py,5+i%4*3,0,Math.PI*2);}
+                    else if(currentThemeIndex===10) {ctx.moveTo(px,py-17);ctx.lineTo(px-14,py+12);ctx.lineTo(px+14,py+12);ctx.closePath();}
+                    else {ctx.ellipse(width/2,height*.3,40+i*18,20+i*9,frame*.001,0,Math.PI*2);}
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+            drawPlayer();
+            updateBlackHoles();
+            updatePartEffects();
+
+            // 플레이어 총알 발사
+            const fireInterval = Math.max(3, 12 - fireRateLevel * 2 - (hasPart('cooler') ? 1 : 0));
+            if (frame % fireInterval === 0) {
+                const bSpeed = 12 + fireRateLevel * 3;
+                if (powerLevel === 1) {
+                    bullets.push({ x: player.x, y: player.y - player.size, speed: bSpeed, damage: 1 });
+                } else if (powerLevel === 2) {
+                    bullets.push({ x: player.x - 8, y: player.y, speed: bSpeed, damage: 1 });
+                    bullets.push({ x: player.x + 8, y: player.y, speed: bSpeed, damage: 1 });
+                } else if (powerLevel >= 3) {
+                    bullets.push({ x: player.x - 14, y: player.y, speed: bSpeed, damage: 1 });
+                    bullets.push({ x: player.x, y: player.y - player.size, speed: bSpeed, damage: 1.5 + (powerLevel - 3) * 0.75 });
+                    bullets.push({ x: player.x + 14, y: player.y, speed: bSpeed, damage: 1 });
+                }
+            }
+
+            if (frame % fireInterval === 0 && powerLevel >= 4) {
+                for (const side of [-1, 1]) bullets.push({x:player.x + side * 25, y:player.y, speed:12 + fireRateLevel * 3, damage:1});
+                if (powerLevel === 5) for (const side of [-1, 1]) bullets.push({x:player.x + side * 34, y:player.y + 5, speed:12 + fireRateLevel * 3, damage:1.5});
+            }
+
+            // 아군 총알 업데이트
+            ctx.fillStyle = skins[currentSkin].highlight;
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.y -= b.speed;
+                drawProjectile(b, false);
+
+                if (boss && Math.hypot(boss.x - b.x, boss.y - b.y) < boss.size) {
+                    boss.hp -= b.damage * jets[selectedJet].damage;
+                    bossHpInner.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
+                    bullets.splice(i, 1);
+
+                    if (boss.hp <= 0) {
+                        boss = null;
+                        bossHpBar.style.display = 'none';
+            document.getElementById('boss-pattern').style.display = 'none';
+                        completeStage();
+                        return;
+                    }
+                    continue;
+                }
+
+                if (b.y < -10) bullets.splice(i, 1);
+            }
+
+            if (frame % 35 === 0 && !boss) spawnEnemy();
+
+            // 적 이동 및 사격 로직
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+
+                if (e.type === 1) { // 직선 가속
+                    e.y += e.speed * 1.25;
+                    if (frame - e.lastShoot > 110) {
+                        e.lastShoot = frame;
+                        enemyBullets.push({ x: e.x, y: e.y + e.size, vx: 0, vy: 2.5 });
+                    }
+                } else if (e.type === 2) { // 지그재그
+                    e.y += e.speed * 1.25;
+                    e.x += Math.sin(frame * 0.05) * 2;
+                    if (frame - e.lastShoot > 90) {
+                        e.lastShoot = frame;
+                        enemyBullets.push({ x: e.x - 4, y: e.y + e.size, vx: -0.5, vy: 2.8 });
+                        enemyBullets.push({ x: e.x + 4, y: e.y + e.size, vx: 0.5, vy: 2.8 });
+                    }
+                } else if (e.type === 3) { // 돌진
+                    let dx = e.targetX - e.x, dy = e.targetY - e.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist > 5) {
+                        e.x += (dx / dist) * e.speed * 1.25;
+                        e.y += (dy / dist) * e.speed * 1.25;
+                    } else {
+                        e.y += e.speed * 1.25;
+                    }
+                } else {
+                    e.age++;
+                    e.y += e.speed * 1.25;
+                    if (e.type === 4) e.x = e.baseX + Math.sin(e.age*.055+e.phase)*38;
+                    if (e.type === 5) e.x = e.baseX + Math.sin(e.age*.025+e.phase)*18;
+                    if (e.type === 6) e.x = e.baseX + Math.sin(e.age*.045+e.phase)*65;
+                    if (e.type === 8) e.x = e.baseX + Math.sin(e.age*.07+e.phase)*45;
+                    if (e.type === 9) e.x = e.baseX + Math.sin(e.age*.025+e.phase)*65;
+                    if (e.type === 10) e.x = e.baseX + Math.sin(e.age*.035+e.phase)*50;
+                    if (e.type === 11) e.x = e.baseX + Math.sin(e.age*.02+e.phase)*12;
+                    if (e.type === 7 && e.age < 55) e.x += Math.sign(player.x-e.x)*1.5;
+                    e.x = Math.max(e.size,Math.min(width-e.size,e.x));
+                    const interval = e.type === 7 ? 85 : 110;
+                    if (frame-e.lastShoot > interval) {
+                        e.lastShoot=frame;
+                        if (e.type === 4) for (const a of [-.2,.2]) fireEnemy(e.x,e.y,Math.PI/2+a,2.4);
+                        if (e.type === 5) for (const a of [-.3,0,.3]) fireEnemy(e.x,e.y,Math.PI/2+a,2);
+                        if (e.type === 6) for (const a of [-.45,.45]) fireEnemy(e.x,e.y,Math.PI/2+a,2.7);
+                        if (e.type === 8) for(const a of [-.18,.18]) fireEnemy(e.x,e.y,Math.PI/2+a,2.6);
+                        if (e.type === 9) fireEnemy(e.x,e.y,Math.atan2(player.y-e.y,player.x-e.x),2.8);
+                        if (e.type === 10) for(const a of [-.35,0,.35]) fireEnemy(e.x,e.y,Math.PI/2+a,2);
+                        if (e.type === 11) for(const a of [-.5,.5]) fireEnemy(e.x,e.y,Math.PI/2+a,2.5);
+                        if (e.type === 7) fireEnemy(e.x,e.y,Math.atan2(player.y-e.y,player.x-e.x),3.2);
+                    }
+                }
+
+                drawEnemy(e);
+
+                // 충돌 검사
+                let destroyed = false;
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j];
+                    if (Math.hypot(e.x - b.x, e.y - b.y) < e.size + 4) {
+                        bullets.splice(j, 1);
+                        enemies.splice(i, 1);
+                        rewardEnemyKill();
+                        destroyed = true;
+                        break;
+                    }
+                }
+
+                if (destroyed) continue;
+                if (e && Math.hypot(e.x - player.x, e.y - player.y) < e.size + player.size - 6) {
+                    hitPlayer();
+                    enemies.splice(i, 1);
+                } else if (e && e.y > height + 30) enemies.splice(i, 1);
+            }
+
+            // 적 총알
+            ctx.fillStyle = '#ff0055';
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                let eb = enemyBullets[i];
+                eb.x += eb.vx; eb.y += eb.vy;
+                drawProjectile(eb, true);
+
+                if (Math.hypot(eb.x - player.x, eb.y - player.y) < player.size * 0.6) {
+                    hitPlayer(eb.damage || 1);
+                    enemyBullets.splice(i, 1);
+                } else if (eb.y > height + 10 || eb.y < -10 || eb.x < -10 || eb.x > width + 10) {
+                    enemyBullets.splice(i, 1);
+                }
+            }
+
+            if (!gameActive) return;
+            updateStarBombs();
+            if (!gameActive) return;
+            if (boss) drawBoss();
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        renderStages();
+        renderShop();
+        renderRankings();
+        refreshRankings();
+        updateUpgradeUI();
+    </script>
+</body>
+
+</html>
