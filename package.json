@@ -1,0 +1,13 @@
+{
+  "name": "mj-game",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node online/server.mjs",
+    "test": "node --test online/hosting.test.mjs"
+  }
+}
