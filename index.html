@@ -291,6 +291,20 @@
                 </select>
             </div>
             <p style="font-size:13px;color:#a5c8e8;margin:0 15px 18px;text-align:center;line-height:1.8">↑ ↓ ← → 방향키로 이동 · 자동 사격 · 잡몹 처치 시 코인 자동 획득<br>ㅁ(A): 코인으로 탄속·연사 강화 · ㅇ(D): 기체 진화</p>
+            <section class="lobby-panel" id="account-panel" aria-labelledby="account-title">
+                <h2 id="account-title">🔐 조종사 로그인</h2>
+                <p style="color:#a9bfd5;font-size:13px;line-height:1.7">같은 계정으로 다른 기기에서도 코인·기체·부품과 랭킹을 이어가세요.<br>손님 랭킹은 그대로 남고, 계정 랭킹은 로그인 후부터 따로 쌓여요.</p>
+                <form id="login-form" style="margin-top:12px">
+                    <label for="login-email">이메일</label><input id="login-email" type="email" autocomplete="email" maxlength="254" required placeholder="이메일 주소" style="width:100%;box-sizing:border-box;margin:6px 0 10px;padding:12px;background:#142138;border:1px solid #466780;border-radius:8px;color:white">
+                    <label for="login-password">비밀번호 · 8자 이상</label><input id="login-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required placeholder="비밀번호" style="width:100%;box-sizing:border-box;margin:6px 0 10px;padding:12px;background:#142138;border:1px solid #466780;border-radius:8px;color:white">
+                    <button class="btn" type="submit" id="login-button" style="font-size:15px;padding:10px 16px">로그인</button>
+                    <button class="btn" type="submit" id="signup-button" style="font-size:15px;padding:10px 16px">회원가입</button>
+                    <button type="button" id="forgot-password" style="background:none;border:0;color:#9fdfff;cursor:pointer;padding:12px">비밀번호 찾기</button>
+                </form>
+                <div id="account-actions" hidden><button id="logout-button" class="btn" style="font-size:14px;padding:10px">로그아웃</button> <button id="cloud-reload" class="btn" style="font-size:14px;padding:10px">최신 기록 불러오기</button></div>
+                <form id="reset-password-form" hidden><label for="new-password">새 비밀번호</label><input id="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button class="btn" type="submit">비밀번호 변경</button></form>
+                <p id="account-status" role="status" style="font-size:12px;color:#b5d7ef;line-height:1.7;margin-top:12px">로그인 연결 확인 중…</p>
+            </section>
             <section class="lobby-panel" style="border-color:#d2ad61;text-align:center" aria-labelledby="rank-challenge-title">
                 <h2 id="rank-challenge-title">🏅 1분 랭크 도전</h2>
                 <p style="color:#b8cfe2;font-size:13px;line-height:1.8">탄환을 피하며 무적 보스에게 최대 60초 동안 피해를 주세요.<br>주포 피해 3 + 제트기 공격 보너스 · 부품 추가탄 피해도 별도 합산<br>60초가 지나거나 체력이 다하면 등급 발표! 보스 피해량만큼 포인트를 받아요.<br>여러 테마의 잡몹이 등장해요! 처치하면 자동으로 코인 획득 · 월드 2는 코인 2배</p>
@@ -425,6 +439,8 @@
             {name:'팬텀', icon:'❖', price:25, color:'#f58aff', speed:6, damage:2, hp:0, skin:3, detail:'화력형 · 일반 보스 피해 2배 / 랭크 주포 피해 +1'},
             {name:'S · ECLIPSE', icon:'✺', price:Infinity, chestOnly:true, color:'#bda0ff', speed:6.6, damage:1, hp:0, skin:4, detail:'S등급 · 상자 전용 1% · 5초마다 무작위 블랙홀 자동 설치 · 3초 유지 · 개수 제한 없음'}
         ];
+        let currentAccountId=null, accountBusy=true;
+        const profileKey=key=>currentAccountId ? key+':'+currentAccountId : key;
         let ownedJets = [0];
         let selectedJet = 0;
         try {
@@ -455,8 +471,9 @@
             nickname = cleanNickname(nicknameInput.value);
             nicknameInput.value = nickname;
             try {
-                localStorage.setItem('jet-nickname-v1', nickname);
+                localStorage.setItem(profileKey('jet-nickname-v1'), nickname);
                 nicknameStatus.textContent = nickname + ' · 저장했어요!';
+                window.accountController?.scheduleSave();
             } catch (_) { nicknameStatus.textContent = nickname + ' · 이번 접속에서 사용해요'; }
         }
         document.getElementById('nickname-save').addEventListener('click', saveNickname);
@@ -497,7 +514,8 @@
             if (!onlinePlayerId) {onlinePlayerId=crypto.randomUUID();localStorage.setItem('jet-online-player',onlinePlayerId);}
         } catch (_) {onlinePlayerId=crypto.randomUUID();}
         async function onlineRequest(path, body) {
-            const response = await fetch(path, {method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(8000)});
+            const bearer=await window.accountController?.token();
+            const response = await fetch(path, {method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(bearer?{Authorization:'Bearer '+bearer}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(8000)});
             if(!response.ok) throw new Error('연결 실패');
             return response.json();
         }
@@ -571,6 +589,7 @@
         } catch (_) {}
         function hasPart(id) { return activeParts.includes(id); }
         function openPartsChest() {
+            if(accountBusy)return;
             if (gameActive || coins < 12) return;
             let roll = Math.random()*100, part = parts[parts.length-1];
             for (const candidate of parts) {
@@ -667,11 +686,13 @@
             }
         }
         function saveHangar() {
-            try { localStorage.setItem('jet-hangar-v1', JSON.stringify({coins, owned:ownedJets, selected:selectedJet, ownedParts, equippedParts})); } catch (_) {}
+            window.accountController?.scheduleSave();
+            try { localStorage.setItem(profileKey('jet-hangar-v1'), JSON.stringify({coins, owned:ownedJets, selected:selectedJet, ownedParts, equippedParts})); } catch (_) {}
         }
         const treasureCost = 10;
         const treasureDrops = [{jet:0, weight:49}, {jet:1, weight:28}, {jet:2, weight:15}, {jet:3, weight:7}, {jet:4, weight:1}];
         function openTreasure() {
+            if(accountBusy)return;
             if (gameActive) return;
             const status = document.getElementById('treasure-status');
             if (coins < treasureCost) {
@@ -983,6 +1004,7 @@
         }
 
         function startGame(stage = selectedStage, mode = 'stage') {
+            if(accountBusy){document.getElementById('account-status').textContent='계정 기록을 불러오는 중이에요. 잠시 기다려 주세요.';return;}
             if (!Number.isInteger(stage) || stage < 0 || stage >= themes.length) return;
             selectedStage = stage;
             playMode = mode === 'rank' ? 'rank' : 'stage';
@@ -1818,7 +1840,28 @@
         renderRankings();
         refreshRankings();
         updateUpgradeUI();
+
+        startScreen.addEventListener('click',event=>{if(accountBusy && !event.target.closest('#account-panel')){event.preventDefault();event.stopImmediatePropagation();}},true);
+        window.gameAccount={
+            setBusy(value){accountBusy=value;},
+            getState(){return {nickname,coins,owned:[...ownedJets],selected:selectedJet,ownedParts:[...ownedParts],equippedParts:[...equippedParts]};},
+            getGuestState(){
+                let state={};try{state=JSON.parse(localStorage.getItem('jet-hangar-v1')||'{}');}catch{}
+                let name='파일럿';try{name=cleanNickname(localStorage.getItem('jet-nickname-v1'));}catch{}
+                return {nickname:name,coins:state.coins||0,owned:state.owned||[0],selected:state.selected||0,ownedParts:state.ownedParts||[],equippedParts:state.equippedParts||[]};
+            },
+            apply(id,state){
+                currentAccountId=id;nickname=cleanNickname(state.nickname);nicknameInput.value=nickname;
+                coins=state.coins;ownedJets=state.owned;selectedJet=state.selected;ownedParts=state.ownedParts;equippedParts=state.equippedParts;currentSkin=jets[selectedJet].skin;
+                try{localStorage.setItem(profileKey('jet-nickname-v1'),nickname);}catch{}
+                saveHangar();renderShop();renderParts();updateUpgradeUI();
+            },
+            refreshRanking:refreshRankings
+        };
+        // A failed module download must not prevent offline guest play.
+        setTimeout(()=>{if(!window.accountController)accountBusy=false;},8000);
     </script>
+    <script type="module" src="/login.js"></script>
 </body>
 
 </html>

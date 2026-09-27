@@ -35,3 +35,9 @@ CREATE TABLE IF NOT EXISTS player_rank_resets (
   player_id TEXT PRIMARY KEY,
   reset_at BIGINT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS game_accounts (
+  account_id TEXT PRIMARY KEY,
+  state TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1
+);

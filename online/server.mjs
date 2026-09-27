@@ -26,6 +26,12 @@ const server=createServer(async(req,res)=>{
       sqlite.prepare('SELECT 1').get();
       res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end('{"ok":true}');return;
     }
+    if(req.method==='GET' && url.pathname==='/api/auth-config'){
+      res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end('{"authURL":""}');return;
+    }
+    if(req.method==='GET' && url.pathname==='/login.js' && existsSync(join(root,'public','login.js'))){
+      res.writeHead(200,{'Content-Type':'text/javascript','Cache-Control':'no-store'});res.end(readFileSync(join(root,'public','login.js')));return;
+    }
     if(url.pathname.startsWith('/api/')){
       const abort=new AbortController();
       req.on('aborted',()=>abort.abort());

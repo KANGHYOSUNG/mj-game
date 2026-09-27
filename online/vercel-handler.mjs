@@ -1,3 +1,5 @@
+import {createIdentityVerifier,authBaseURL} from './identity.mjs';
+import {createAccountAPI} from './account.mjs';
 import {neon} from '@neondatabase/serverless';
 import {createLeaderboardAPI} from './api.mjs';
 import {postgresAdapter,initializePostgres} from './postgres.mjs';
@@ -9,7 +11,22 @@ function getAPI(){
       if(!connection)throw new Error('Connect the project to its Neon database in Vercel Storage.');
       const sql=neon(connection);
       await initializePostgres(sql);
-      return createLeaderboardAPI(postgresAdapter((query,args)=>sql.query(query,args)));
+      const db=postgresAdapter((query,args)=>sql.query(query,args));
+      const identity=createIdentityVerifier(authBaseURL());
+      const account=createAccountAPI(db,identity);
+      const ranking=createLeaderboardAPI(db,{
+        resolvePlayerId:async(request,claimed)=>{
+          const user=await identity(request);
+          if(user)return user.id;
+          if(typeof claimed==='string' && claimed.startsWith('acct-'))throw new Error('Login required');
+          return claimed;
+        },
+        authorizeRun:async(request,run)=>{
+          const user=await identity(request);
+          return run.player_id.startsWith('acct-') ? user?.id===run.player_id : !user;
+        }
+      });
+      return request=>new URL(request.url).pathname==='/api/account' ? account(request) : ranking(request);
     })().catch(error=>{apiPromise=null;throw error;});
   }
   return apiPromise;

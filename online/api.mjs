@@ -1,5 +1,5 @@
 // Portable leaderboard service. The database adapter owns persistence.
-export function createLeaderboardAPI(db, {now = Date.now, randomUUID = () => crypto.randomUUID()} = {}) {
+export function createLeaderboardAPI(db, {now = Date.now, randomUUID = () => crypto.randomUUID(), resolvePlayerId = async (_request,id) => id, authorizeRun = async () => true} = {}) {
   const reply = (data, status = 200) => Response.json(data, {status, headers:{'Cache-Control':'no-store'}});
   const profileValid = p => p && typeof p.name === 'string' && p.name.trim().length > 0 && p.name.length <= 12 && !/[\u0000-\u001f\u007f]/.test(p.name) && [1,2].includes(p.world) && Number.isInteger(p.stage) && p.stage >= 0 && p.stage < 12 && Number.isInteger(p.jet) && p.jet >= 0 && p.jet < 5 && ['easy','normal','hard'].includes(p.difficulty);
   return async function api(request) {
@@ -31,6 +31,9 @@ export function createLeaderboardAPI(db, {now = Date.now, randomUUID = () => cry
       for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4096){await reader.cancel();return reply({error:'Too large'},413);}chunks.push(value);}
       const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
       let body;try{body=JSON.parse(new TextDecoder().decode(bytes));}catch{return reply({error:'Invalid JSON'},400);}
+      if(url.pathname==='/api/rank/reset' || url.pathname==='/api/runs') {
+        try {body.playerId=await resolvePlayerId(request,body.playerId);} catch {return reply({error:'Login required'},401);}
+      }
       if(url.pathname==='/api/rank/reset') {
         if(typeof body.playerId!=='string' || !/^[a-zA-Z0-9-]{16,64}$/.test(body.playerId))return reply({error:'Invalid player'},400);
         await db.run('INSERT INTO player_rank_resets (player_id, reset_at) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET reset_at=excluded.reset_at',[body.playerId,now()]);
@@ -47,6 +50,7 @@ export function createLeaderboardAPI(db, {now = Date.now, randomUUID = () => cry
       if(typeof body.token!=='string' || body.token.length>64 || !Number.isInteger(body.score) || body.score<0 || body.score>50000 || typeof body.cleared!=='boolean')return reply({error:'Invalid score'},400);
       const run=await db.get('SELECT * FROM runs WHERE token = ?',[body.token]);
       if(!run)return reply({error:'Run not found'},404);
+      try {if(!await authorizeRun(request,run))return reply({error:'Wrong player'},403);}catch{return reply({error:'Login required'},401);}
       const isRank = run.mode==='rank';
       const table = isRank ? 'rank_challenges' : 'rankings';
       if(!isRank && (body.score>1800 || body.score%100!==0))return reply({error:'Invalid stage score'},400);
