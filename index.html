@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -31,7 +30,7 @@
         #game-container {
             position: relative;
             width: 100%;
-            max-width: 600px;
+            max-width: none;
             height: 100vh;
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
             overflow: hidden;
@@ -101,7 +100,7 @@
 
         #upgrade-container {
             position: absolute;
-            bottom: 12px;
+            bottom: 72px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
@@ -240,8 +239,9 @@
 <body>
 
     <div id="game-container">
+        <button id="fullscreen-btn" style="position:absolute;right:16px;bottom:16px;z-index:20;padding:10px 14px;background:#142d45;border:1px solid #6ed9ef;border-radius:10px;color:white;cursor:pointer">⛶ 전체화면</button>
         <canvas id="gameCanvas" tabindex="0" aria-label="게임 화면: 방향키로 이동, ㅇ키로 진화" style="outline:none"></canvas>
-        <div id="control-hint" style="position:absolute;bottom:68px;left:0;width:100%;text-align:center;color:#a9dbea;font-size:12px;pointer-events:none;">↑ ↓ ← → 이동 · 동전을 모아 ㅇ키로 진화</div>
+        <div id="control-hint" style="position:absolute;bottom:128px;left:0;width:100%;text-align:center;color:#a9dbea;font-size:12px;pointer-events:none;">↑ ↓ ← → 이동 · 동전을 모아 ㅇ키로 진화</div>
 
         <div id="ui-bar">
             <div id="hp-display" class="player-hp-box">❤️❤️❤️</div>
@@ -255,6 +255,7 @@
             <div class="boss-hp-inner" id="boss-hp-inner"></div>
         </div>
 
+        <div id="rank-challenge-hud" style="display:none;position:absolute;top:68px;left:10%;width:80%;z-index:6;text-align:center;font-weight:bold;color:#ffe39c;font-size:18px;pointer-events:none"></div>
         <div id="boss-pattern" role="status" style="display:none;position:absolute;top:108px;left:5%;width:90%;z-index:6;text-align:center;color:#fff0bd;font-size:12px;pointer-events:none"></div>
         <button id="lobby-btn" style="position:absolute;right:12px;top:75px;z-index:8;padding:8px 12px;border:1px solid #496880;border-radius:8px;background:#0c1830;color:white;cursor:pointer;display:none">⌂ 로비로 돌아가기</button>
         <div id="upgrade-container">
@@ -290,6 +291,12 @@
                 </select>
             </div>
             <p style="font-size:13px;color:#a5c8e8;margin:0 15px 18px;text-align:center;line-height:1.8">↑ ↓ ← → 방향키로 이동 · 자동 사격 · 잡몹 처치 시 코인 자동 획득<br>ㅁ(A): 코인으로 탄속·연사 강화 · ㅇ(D): 기체 진화</p>
+            <section class="lobby-panel" style="border-color:#d2ad61;text-align:center" aria-labelledby="rank-challenge-title">
+                <h2 id="rank-challenge-title">🏅 1분 랭크 도전</h2>
+                <p style="color:#b8cfe2;font-size:13px;line-height:1.8">탄환을 피하며 무적 보스에게 최대 60초 동안 피해를 주세요.<br>주포 피해 3 + 제트기 공격 보너스 · 부품 추가탄 피해도 별도 합산<br>60초가 지나거나 체력이 다하면 등급 발표! 보스 피해량만큼 포인트를 받아요.<br>여러 테마의 잡몹이 등장해요! 처치하면 자동으로 코인 획득 · 월드 2는 코인 2배</p>
+                <button class="btn" id="rank-challenge-btn" style="margin-top:12px;font-size:18px;background:linear-gradient(135deg,#96712d,#684ea0)">랭크 도전 · 60초</button>
+                <div id="rank-badges" aria-label="피해량별 랭크 배지" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px;font-size:12px"></div><p style="font-size:12px;color:#d9c58e;line-height:1.8;margin-top:12px">잡몹은 코인을 주고, 랭크 등급은 보스에게 준 피해로 결정돼요.<br>도중에 로비로 나가면 랭크 기록은 등록되지 않아요.</p>
+            </section>
             <section class="lobby-panel" aria-labelledby="stage-title">
                 <h2 id="stage-title">🗺 스테이지 선택</h2>
                 <p style="font-size:12px;color:#a9bfd5;line-height:1.7;margin-bottom:12px">모든 스테이지가 열려 있어요. 원하는 테마로 바로 출격하세요!<br>일반 적 10대 처치 → 보스 격파 → 스테이지 클리어</p>
@@ -301,10 +308,11 @@
                 <p id="nickname-status" role="status" style="font-size:12px;color:#9ecfdf;margin-top:8px"></p>
             </section>
             <section class="lobby-panel" aria-labelledby="ranking-title">
-                <h2 id="ranking-title">🌐 온라인 랭킹 · TOP 10</h2>
-                <p style="color:#91a8c1;font-size:11px;margin-bottom:8px">닉네임과 기록이 다른 플레이어에게 공개돼요 · 월드별 순위</p>
+                <h2 id="ranking-title">🌐 누적 포인트 랭킹 · TOP 10</h2>
+                <p style="color:#91a8c1;font-size:11px;margin-bottom:8px">월드 1·2의 점수와 랭크 도전 피해량을 플레이어별로 합산해요.</p>
                 <div style="display:flex;gap:8px;margin-bottom:10px">
-                    <select id="ranking-world" aria-label="랭킹 월드" style="padding:8px;background:#142138;color:white;border:1px solid #466780;border-radius:8px"><option value="1">월드 1 랭킹</option><option value="2">월드 2 랭킹</option></select>
+
+                    <button id="rank-reset" style="padding:8px;background:#38455d;color:white;border:0;border-radius:8px;cursor:pointer">내 랭크 초기화</button>
                     <button id="ranking-refresh" style="padding:8px;background:#19677d;color:white;border:0;border-radius:8px;cursor:pointer">새로고침</button>
                 </div>
                 <p id="ranking-status" role="status" style="font-size:12px;color:#adc4d8;margin-bottom:8px">온라인 랭킹 연결 중…</p>
@@ -362,6 +370,18 @@
         const canvas = document.getElementById('gameCanvas');
         let ctx = canvas.getContext('2d');
         const container = document.getElementById('game-container');
+        const fullscreenButton = document.getElementById('fullscreen-btn');
+        fullscreenButton.addEventListener('click', async () => {
+            try {
+                if (document.fullscreenElement) await document.exitFullscreen();
+                else if (container.requestFullscreen) await container.requestFullscreen();
+                else { fullscreenButton.textContent='브라우저 창을 최대화해 주세요'; return; }
+            } catch (_) { fullscreenButton.textContent='브라우저 창을 최대화해 주세요'; }
+        });
+        document.addEventListener('fullscreenchange', () => {
+            fullscreenButton.textContent=document.fullscreenElement ? '⛶ 전체화면 닫기' : '⛶ 전체화면';
+            resize();
+        });
 
         const startScreen = document.getElementById('start-screen');
         const gameoverScreen = document.getElementById('gameover-screen');
@@ -402,7 +422,7 @@
             {name:'팔콘', icon:'✦', price:0, color:'#51eaff', speed:6, damage:1, hp:0, skin:0, detail:'기본형 · 균형 잡힌 에너지탄'},
             {name:'스위프트', icon:'➤', price:15, color:'#67ff9a', speed:8.4, damage:1, hp:0, skin:1, detail:'기동형 · 이동 속도 +40% · 초록 레이저'},
             {name:'타이탄', icon:'⬟', price:20, color:'#ffc568', speed:5.1, damage:1, hp:2, skin:2, detail:'장갑형 · 하트 +2 · 이동 속도 −15%'},
-            {name:'팬텀', icon:'❖', price:25, color:'#f58aff', speed:6, damage:2, hp:0, skin:3, detail:'화력형 · 보스 피해 2배 · 플라스마탄'},
+            {name:'팬텀', icon:'❖', price:25, color:'#f58aff', speed:6, damage:2, hp:0, skin:3, detail:'화력형 · 일반 보스 피해 2배 / 랭크 주포 피해 +1'},
             {name:'S · ECLIPSE', icon:'✺', price:Infinity, chestOnly:true, color:'#bda0ff', speed:6.6, damage:1, hp:0, skin:4, detail:'S등급 · 상자 전용 1% · 5초마다 무작위 블랙홀 자동 설치 · 3초 유지 · 개수 제한 없음'}
         ];
         let ownedJets = [0];
@@ -459,7 +479,9 @@
                 const info = document.createElement('div');
                 const name = document.createElement('strong'); name.textContent = record.name;
                 const detail = document.createElement('small');
-                detail.textContent = 'W' + record.world + ' · ' + {easy:'쉬움',normal:'보통',hard:'어려움'}[record.difficulty] + ' · ' + jets[record.jet].name + (Number.isInteger(record.stage) && stageNames[record.stage] ? ' · ' + stageNames[record.stage] + (record.cleared ? ' ✓' : '') : '');
+                const tier = getRankTier(record.bestDamage || 0);
+                detail.style.color=tier.color;
+                detail.textContent = tier.icon + ' ' + tier.name + ' · 최고 피해 ' + (record.bestDamage || 0).toLocaleString() + ' · ' + record.plays + '회 플레이';
                 info.appendChild(name); info.appendChild(detail);
                 const points = document.createElement('strong'); points.className = 'rank-score'; points.textContent = record.score.toLocaleString() + '점';
                 row.appendChild(place); row.appendChild(info); row.appendChild(points); list.appendChild(row);
@@ -484,10 +506,10 @@
             const status=document.getElementById('ranking-status');
             status.textContent='온라인 순위를 불러오는 중…';
             try {
-                const result=await onlineRequest('/api/rankings?world='+document.getElementById('ranking-world').value);
+                const result=await onlineRequest('/api/rankings');
                 if(requestId!==rankingRequest)return;
                 if(!Array.isArray(result.records))throw new Error('잘못된 응답');
-                rankings=result.records.filter(r=>r && typeof r.name==='string' && Number.isInteger(r.score) && jets[r.jet] && ['easy','normal','hard'].includes(r.difficulty) && [1,2].includes(r.world)).slice(0,10);
+                rankings=result.records.filter(r=>r && typeof r.name==='string' && Number.isSafeInteger(r.score) && r.score >= 0 && Number.isInteger(r.plays)).slice(0,10);
                 rankingLoaded=true;status.textContent='온라인 연결됨 · 모두가 같은 기록을 봐요';
             } catch (_) {
                 if(requestId!==rankingRequest)return;
@@ -496,8 +518,16 @@
             }
             renderRankings();
         }
+        document.getElementById('rank-reset').addEventListener('click',async () => {
+            const button=document.getElementById('rank-reset');button.disabled=true;
+            try {
+                await onlineRequest('/api/rank/reset',{playerId:onlinePlayerId});
+                await refreshRankings();
+                document.getElementById('ranking-status').textContent='내 랭크를 루키로 초기화했어요. 누적 포인트와 보유 아이템은 유지됩니다.';
+            } catch (_) {document.getElementById('ranking-status').textContent='초기화에 실패했어요. 다시 시도해 주세요.';}
+            finally {button.disabled=false;}
+        });
         document.getElementById('ranking-refresh').addEventListener('click',refreshRankings);
-        document.getElementById('ranking-world').addEventListener('change',refreshRankings);
         async function beginOnlineRun(profile) {
             try {return await onlineRequest('/api/runs',{...profile,playerId:onlinePlayerId});}
             catch (_) {return null;}
@@ -508,9 +538,9 @@
             try {
                 const session=await pending.session;
                 if(!session || !session.token)throw new Error('연결 실패');
-                await onlineRequest('/api/rankings',{token:session.token,score:pending.score,cleared:pending.cleared});
+                await onlineRequest('/api/rankings',{token:session.token,score:pending.score,cleared:pending.cleared,outcome:pending.outcome});
                 if(pendingOnlineResult===pending)pendingOnlineResult=null;
-                if(pending.version===currentRunVersion)label.textContent='온라인 랭킹에 기록을 등록했어요!';
+                if(pending.version===currentRunVersion)label.textContent='+' + pending.score.toLocaleString() + ' 포인트 · 누적 랭킹에 더했어요!';
                 refreshRankings();
             } catch (_) {
                 if(pending.version===currentRunVersion)label.textContent='온라인 등록에 실패했어요. 연결을 확인하고 다시 도전해 주세요.';
@@ -519,7 +549,7 @@
         function recordRun() {
             if (runRecorded || !runProfile) return;
             runRecorded=true;
-            pendingOnlineResult={session:onlineRunPromise,score,cleared:!!runProfile.cleared,version:currentRunVersion};
+            pendingOnlineResult={session:onlineRunPromise,score,cleared:!!runProfile.cleared,outcome:runProfile.outcome || 'timeout',version:currentRunVersion};
             submitOnlineResult(pendingOnlineResult);
         }
         const parts = [
@@ -618,9 +648,15 @@
                 ctx.beginPath();ctx.arc(x,y,43,0,Math.PI*2);ctx.stroke();ctx.restore();
             }
         }
+        function calculateBulletDamage(bullet) {
+            if(playMode !== 'rank') return bullet.damage * jets[selectedJet].damage;
+            // Rank main-gun damage is fixed at 3; equipment adds damage, never multiplies it.
+            if(bullet.source === 'part') return bullet.damage;
+            return 3 + Math.max(0, jets[selectedJet].damage - 1);
+        }
         function updatePartEffects() {
-            if(hasPart('cannon') && frame%30===0) for(const side of [-1,1]) bullets.push({x:player.x+side*34,y:player.y-24,speed:18,damage:1});
-            if(hasPart('wings') && frame%60===0) for(const offset of [-52,-38,38,52]) bullets.push({x:player.x+offset,y:player.y-12,speed:20,damage:2});
+            if(hasPart('cannon') && frame%30===0) for(const side of [-1,1]) bullets.push({x:player.x+side*34,y:player.y-24,speed:18,damage:1,source:'part'});
+            if(hasPart('wings') && frame%60===0) for(const offset of [-52,-38,38,52]) bullets.push({x:player.x+offset,y:player.y-12,speed:20,damage:2,source:'part'});
             if(hasPart('pulse') && frame%240===0) {
                 pulseFlash=20;
                 enemyBullets=enemyBullets.filter(b=>Math.hypot(b.x-player.x,b.y-player.y)>110);
@@ -689,6 +725,7 @@
         });
         function openLobby() {
             gameActive = false; cancelAnimationFrame(animationId); heldKeys.clear();
+            document.getElementById('rank-challenge-hud').style.display='none';
             gameoverScreen.style.display = 'none'; startScreen.style.display = 'flex';
             document.getElementById('lobby-btn').style.display = 'none';
             bossHpBar.style.display = 'none';
@@ -712,6 +749,41 @@
                 ? '월드 2 · 같은 12개 스테이지 · 적에게 받는 피해 2배 · 잡몹 처치당 2코인'
                 : '월드 1 · 잡몹 처치당 1코인';
         });
+        let playMode = 'stage', rankDamage = 0, rankCoins = 0, rankDeadline = 0, lastRankHud = '';
+        const rankTiers = [
+            {min:10000,name:'코스믹',color:'#ffedaa',icon:'🌌'}, {min:6500,name:'이터널',color:'#b5a4ff',icon:'♾️'},
+            {min:4500,name:'레전드',color:'#ff9566',icon:'🐉'}, {min:3000,name:'그랜드마스터',color:'#ff6ca8',icon:'👑'},
+            {min:2000,name:'챌린저',color:'#ffbcf0'}, {min:1200,name:'마스터',color:'#c098ff'},
+            {min:800,name:'다이아',color:'#71e4ff'}, {min:500,name:'플래티넘',color:'#78e9c2'},
+            {min:300,name:'골드',color:'#ffdd70'}, {min:200,name:'실버',color:'#d2dfef'},
+            {min:100,name:'브론즈',color:'#d39b72'}, {min:0,name:'루키',color:'#a9bbcf'}
+        ];
+        const rankIcons = ['🌟','🔮','💎','🔰','🥇','🥈','🥉','✈️'];
+        rankTiers.slice(4).forEach((tier,i)=>tier.icon=rankIcons[i]);
+        const badgeGallery=document.getElementById('rank-badges');
+        [...rankTiers].reverse().forEach(tier=>{
+            const badge=document.createElement('span');
+            badge.style.cssText='display:inline-flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid '+tier.color+';border-radius:12px;background:#101b30;color:'+tier.color;
+            const title=document.createElement('strong');title.textContent=tier.icon+' '+tier.name;
+            const threshold=document.createElement('small');threshold.textContent=tier.min.toLocaleString()+' 피해';
+            badge.appendChild(title);badge.appendChild(threshold);badgeGallery.appendChild(badge);
+        });
+        function getRankTier(damage) {return rankTiers.find(t=>damage>=t.min);}
+        function finishRankChallenge(reason = 'timeout') {
+            if(!gameActive || playMode!=='rank')return;
+            gameActive=false;cancelAnimationFrame(animationId);heldKeys.clear();
+            score=Math.floor(rankDamage);
+            const tier=getRankTier(score);
+            document.getElementById('result-title').textContent='RANK · '+tier.icon+' '+tier.name;
+            document.getElementById('result-title').style.color=tier.color;
+            document.getElementById('final-score').textContent=(reason==='defeated' ? '기체 파괴 · ' : '60초 완료 · ')+'누적 피해 '+rankDamage.toLocaleString()+' · +'+score+' 포인트 · 획득 코인 '+rankCoins;
+            restartBtn.textContent='랭크 다시 도전';
+            document.getElementById('rank-challenge-hud').style.display='none';
+            document.getElementById('lobby-btn').style.display='none';
+            bossHpBar.style.display='none';gameoverScreen.style.display='flex';
+            runProfile.cleared=true;runProfile.outcome=reason;recordRun();
+        }
+        document.getElementById('rank-challenge-btn').addEventListener('click',()=>startGame(0,'rank'));
         let selectedStage = 0;
         let currentThemeIndex = 0;
         const themes = [
@@ -843,9 +915,14 @@
         }
 
         function rewardEnemyKill() {
-            score += 100;
             coins += runWorld;
-            scoreDisplay.innerText = 'SCORE: ' + score;
+            if(playMode==='rank') {
+                rankCoins += runWorld;
+                scoreDisplay.innerText = 'DAMAGE: ' + rankDamage.toLocaleString();
+            } else {
+                score += 100;
+                scoreDisplay.innerText = 'SCORE: ' + score;
+            }
             updateUpgradeUI();
         }
 
@@ -905,12 +982,16 @@
             themeNameDisplay.innerText = 'W' + runWorld + ' · ' + themes[currentThemeIndex].name;
         }
 
-        function startGame(stage = selectedStage) {
+        function startGame(stage = selectedStage, mode = 'stage') {
             if (!Number.isInteger(stage) || stage < 0 || stage >= themes.length) return;
             selectedStage = stage;
+            playMode = mode === 'rank' ? 'rank' : 'stage';
+            rankCoins = 0;
+            rankDamage=0;rankDeadline=0;lastRankHud='';
+            document.getElementById('rank-challenge-hud').style.display='none';
             runWorld = worldSelect.value === '2' ? 2 : 1;
             saveNickname();
-            runProfile = {name:nickname, difficulty:difficultySelect.value, jet:selectedJet, stage:selectedStage, world:runWorld};
+            runProfile = {name:nickname, difficulty:difficultySelect.value, jet:selectedJet, stage:selectedStage, world:runWorld, mode:playMode};
             runRecorded = false;
             currentRunVersion++;
             onlineRunPromise=beginOnlineRun({...runProfile});
@@ -947,14 +1028,22 @@
             gameoverScreen.style.display = 'none';
 
             updateUpgradeUI();
+            if(playMode==='rank') {
+                boss={theme:0,x:width/2,y:Math.min(220,height*.3),targetY:Math.min(220,height*.3),size:75,hp:Infinity,maxHp:Infinity,dir:1,speed:0};
+                rankDeadline=performance.now()+60000;
+                bossNameText.textContent='무적 랭크 보스';bossHpBar.style.display='block';bossHpInner.style.width='100%';
+                themeNameDisplay.textContent='RANK · 60초 도전';
+                document.getElementById('rank-challenge-hud').style.display='block';
+            }
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        restartBtn.addEventListener('click', () => startGame(selectedStage));
+        restartBtn.addEventListener('click', () => startGame(selectedStage, playMode));
 
         function completeStage() {
             if (!gameActive) return;
             gameActive = false; cancelAnimationFrame(animationId); heldKeys.clear();
+            document.getElementById('rank-challenge-hud').style.display='none';
             if (runProfile) runProfile.cleared = true;
             recordRun(); saveHangar();
             document.getElementById('result-title').textContent = selectedStage === 11 ? '머나먼 세상 · 정복 완료!' : 'STAGE CLEAR!';
@@ -984,7 +1073,8 @@
             invulnerableFrames = 50;
 
             if (playerHp <= 0) {
-                gameOver();
+                if(playMode==='rank')finishRankChallenge('defeated');
+                else gameOver();
             }
         }
 
@@ -1117,7 +1207,7 @@
         // 👾 테마별 적 생성 기믹
         function spawnEnemy() {
             if (enemies.length >= 8) return;
-            const type = currentThemeIndex === 11 ? 1 + Math.floor(Math.random()*11) : themes[currentThemeIndex].enemyType;
+            const type = playMode === 'rank' || currentThemeIndex === 11 ? 1 + Math.floor(Math.random()*11) : themes[currentThemeIndex].enemyType;
 
             if (type === 1) { // CYBER SKY: 일직선 가속 적
                 enemies.push({
@@ -1259,6 +1349,15 @@
 
         function drawBoss() {
             if (!boss) return;
+            if(playMode==='rank') {
+                drawFinalBoss(boss.x,boss.y,boss.size,8);
+                // Three seconds to get ready; ranked attacks leave wider recovery windows.
+                if(frame>=180) {
+                    if(frame%120===0) for(const offset of [-.3,0,.3]) fireBoss(boss.x,boss.y+35,Math.PI/2+offset,2.6);
+                    if(frame%180===0) fireBoss(boss.x,boss.y+35,Math.atan2(player.y-boss.y-35,player.x-boss.x),3.0);
+                }
+                return;
+            }
             if (boss.y < boss.targetY) boss.y += 1.2;
             else {
                 boss.x += boss.speed * boss.dir;
@@ -1508,6 +1607,12 @@
         // 메인 게임 루프
         function gameLoop(timestamp) {
             if (!gameActive) return;
+            if(playMode==='rank') {
+                const remaining=Math.max(0,rankDeadline-performance.now());
+                if(remaining<=0){finishRankChallenge();return;}
+                const text='남은 시간 '+Math.ceil(remaining/1000)+'초 · 누적 피해 '+rankDamage.toLocaleString()+' · '+getRankTier(rankDamage).icon+' '+getRankTier(rankDamage).name+' · 🪙 +'+rankCoins;
+                if(text!==lastRankHud){lastRankHud=text;document.getElementById('rank-challenge-hud').textContent=text;}
+            }
             if (typeof timestamp === 'number') {
                 const interval = 1000 / 60;
                 if (lastFrameTime !== null && timestamp - lastFrameTime < interval - 0.5) {
@@ -1521,7 +1626,7 @@
             ctx.clearRect(0, 0, width, height);
             frame++;
 
-            if (score >= nextBossScore && !boss) {
+            if (playMode==='stage' && score >= nextBossScore && !boss) {
                 spawnBoss();
             }
 
@@ -1585,11 +1690,17 @@
                 drawProjectile(b, false);
 
                 if (boss && Math.hypot(boss.x - b.x, boss.y - b.y) < boss.size) {
-                    boss.hp -= b.damage * jets[selectedJet].damage;
-                    bossHpInner.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
+                    const dealtDamage=calculateBulletDamage(b);
+                    if(playMode==='rank') {
+                        rankDamage+=dealtDamage;
+                        scoreDisplay.innerText='DAMAGE: '+rankDamage.toLocaleString();
+                    } else {
+                        boss.hp -= dealtDamage;
+                        bossHpInner.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
+                    }
                     bullets.splice(i, 1);
 
-                    if (boss.hp <= 0) {
+                    if (playMode==='stage' && boss.hp <= 0) {
                         boss = null;
                         bossHpBar.style.display = 'none';
             document.getElementById('boss-pattern').style.display = 'none';
@@ -1602,7 +1713,7 @@
                 if (b.y < -10) bullets.splice(i, 1);
             }
 
-            if (frame % 35 === 0 && !boss) spawnEnemy();
+            if (playMode==='rank' ? frame % 75 === 0 : frame % 35 === 0 && !boss) spawnEnemy();
 
             // 적 이동 및 사격 로직
             for (let i = enemies.length - 1; i >= 0; i--) {
@@ -1610,14 +1721,14 @@
 
                 if (e.type === 1) { // 직선 가속
                     e.y += e.speed * 1.25;
-                    if (frame - e.lastShoot > 110) {
+                    if (frame - e.lastShoot > (playMode==='rank' ? 150 : 110)) {
                         e.lastShoot = frame;
                         enemyBullets.push({ x: e.x, y: e.y + e.size, vx: 0, vy: 2.5 });
                     }
                 } else if (e.type === 2) { // 지그재그
                     e.y += e.speed * 1.25;
                     e.x += Math.sin(frame * 0.05) * 2;
-                    if (frame - e.lastShoot > 90) {
+                    if (frame - e.lastShoot > (playMode==='rank' ? 125 : 90)) {
                         e.lastShoot = frame;
                         enemyBullets.push({ x: e.x - 4, y: e.y + e.size, vx: -0.5, vy: 2.8 });
                         enemyBullets.push({ x: e.x + 4, y: e.y + e.size, vx: 0.5, vy: 2.8 });
@@ -1644,7 +1755,7 @@
                     if (e.type === 7 && e.age < 55) e.x += Math.sign(player.x-e.x)*1.5;
                     e.x = Math.max(e.size,Math.min(width-e.size,e.x));
                     const interval = e.type === 7 ? 85 : 110;
-                    if (frame-e.lastShoot > interval) {
+                    if (frame-e.lastShoot > interval * (playMode==='rank' ? 1.35 : 1)) {
                         e.lastShoot=frame;
                         if (e.type === 4) for (const a of [-.2,.2]) fireEnemy(e.x,e.y,Math.PI/2+a,2.4);
                         if (e.type === 5) for (const a of [-.3,0,.3]) fireEnemy(e.x,e.y,Math.PI/2+a,2);
@@ -1683,7 +1794,8 @@
             ctx.fillStyle = '#ff0055';
             for (let i = enemyBullets.length - 1; i >= 0; i--) {
                 let eb = enemyBullets[i];
-                eb.x += eb.vx; eb.y += eb.vy;
+                const shotSpeed = playMode==='rank' ? 0.8 : 1;
+                eb.x += eb.vx * shotSpeed; eb.y += eb.vy * shotSpeed;
                 drawProjectile(eb, true);
 
                 if (Math.hypot(eb.x - player.x, eb.y - player.y) < player.size * 0.6) {
